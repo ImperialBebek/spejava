@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { articles, events, legacyUrl, navigation, sponsors } from './content'
+import { instagramFeedUrl, instagramPosts, readInstagramPosts } from './instagram'
 
 function Chevron() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m5 9 7 7 7-7" /></svg>
@@ -54,9 +56,46 @@ function EventIcon({ location = false }: { location?: boolean }) {
   </svg>
 }
 
+function InstagramFeed() {
+  const [posts, setPosts] = useState(instagramPosts)
+  const container = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    async function refresh() {
+      try {
+        const response = await fetch(instagramFeedUrl, { signal: controller.signal })
+        if (!response.ok) return
+        const posts = readInstagramPosts(await response.json())
+        if (posts.length && !controller.signal.aborted) setPosts(posts)
+      } catch {
+        // Keep the local posts available when the feed cannot be reached.
+      }
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      observer.disconnect()
+      void refresh()
+    }, { rootMargin: '200px' })
+    if (container.current) observer.observe(container.current)
+    return () => { observer.disconnect(); controller.abort() }
+  }, [])
+
+  return <div className="instagram-grid" ref={container} aria-label="Latest SPE Java Instagram posts">
+    {posts.map((post) => <a className="instagram-card" href={post.permalink} target="_blank" rel="noreferrer" key={post.id}>
+      <img src={post.mediaUrl} alt={post.caption.split('\n')[0]} width="640" height="640" loading="lazy" />
+      <span className="instagram-overlay">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+        <span>{post.likeCount} likes<span className="sr-only"> — view on Instagram (opens in a new tab)</span></span>
+      </span>
+    </a>)}
+  </div>
+}
+
 function LatestPosts() {
   return <section className="latest-posts section-shell" aria-labelledby="posts-title">
     <h2 id="posts-title">Latest posts</h2>
+    <InstagramFeed />
     <iframe
       className="social-feed"
       title="Latest SPE Java LinkedIn posts"

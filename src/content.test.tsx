@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import App from './App'
 import { articles, events, legacyUrl, navigation, sponsors } from './content'
+import { instagramPosts, readInstagramPosts } from './instagram'
 
 test('all non-homepage links preserve existing SPE Java destinations', () => {
   for (const item of navigation) {
@@ -20,6 +21,10 @@ test('all content images exist locally and have meaningful descriptions', () => 
     assert.ok(item.alt.length > 15)
   }
   for (const sponsor of sponsors) assert.ok(existsSync(`public/images/${sponsor.image}`))
+  for (const post of instagramPosts) {
+    assert.ok(existsSync(`public${post.mediaUrl}`))
+    assert.ok(post.caption.length > 15)
+  }
 })
 
 test('homepage renders crawlable headings and links without JavaScript', () => {
@@ -32,4 +37,14 @@ test('homepage renders crawlable headings and links without JavaScript', () => {
   assert.ok(html.includes('<details'))
   assert.ok(html.includes('loading="lazy"'), 'offscreen media should be lazy loaded')
   assert.ok(!html.includes('autoplay'), 'video should not autoplay')
+  for (const post of instagramPosts) assert.ok(html.includes(post.permalink), 'Instagram posts must be available without JavaScript')
+})
+
+test('Instagram feed accepts valid posts and rejects malformed or unsafe destinations', () => {
+  const post = { ...instagramPosts[0], mediaUrl: 'https://images.feedspring.com/post.webp' }
+  assert.deepEqual(readInstagramPosts({ data: { media: [post] } }), [post])
+  assert.equal(readInstagramPosts({ data: { media: Array(5).fill(post) } }).length, 3)
+  assert.deepEqual(readInstagramPosts(null), [])
+  assert.deepEqual(readInstagramPosts({ error: 'Unavailable' }), [])
+  assert.deepEqual(readInstagramPosts({ data: { media: [null, {}, { ...post, permalink: 'javascript:alert(1)' }, { ...post, mediaUrl: 'data:image/svg+xml,invalid' }] } }), [])
 })
