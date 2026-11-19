@@ -2,7 +2,7 @@ const legacyOrigin = 'https://spejava.com'
 export const legacyUrl = (path: string) => `${legacyOrigin}${path}`
 
 export const navigation = [
-  { label: 'Events', path: '/events', children: [{ label: 'Annual Energy Symposium', url: 'https://spejava.com/events' }] },
+  { label: 'Events', path: '/events', children: [{ label: 'Annual Energy Symposium', url: 'https://spejava.com/articles/aes' }] },
   { label: 'Blog', path: '/blog' },
   { label: 'Students', path: '/student-chapter', children: [{ label: 'Students Chapter', url: 'https://spejava.com/student-chapter' }, { label: 'Scholarship', url: 'https://spejava.com/articles/scholarship-program-2025' }] },
   { label: 'About', path: '/about' },

@@ -93,7 +93,7 @@ export default function App() {
             {articles.map((article) => <article className="article-card" key={article.slug}>
               <a href={legacyUrl(`/articles/${article.slug}`)}>
                 <img src={`/images/${article.image}`} alt={article.alt} width="640" height="480" loading="lazy" />
-                <h3>{article.title}</h3>
+                <div className="article-title"><h3>{article.title}</h3></div>
               </a>
             </article>)}
           </div>

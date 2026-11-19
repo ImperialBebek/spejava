@@ -51,7 +51,7 @@ h1 { font-size: 40px; line-height: 1.6; letter-spacing: -1.2px; font-weight: 500
 .partner-column-1 .partner-track { animation-direction: reverse; animation-delay: -15s; }
 .partner-set { display: flex; flex-direction: column; }
 .partner { height: 72px; display: flex; align-items: center; justify-content: center; }
-.partner img { width: auto; height: auto; max-width: 150px; max-height: 40px; object-fit: contain; }
+.partner img { width: auto; height: auto; max-width: min(150px, 100%); max-height: 40px; object-fit: contain; }
 .partners:hover .partner-track, .partners:focus-within .partner-track { animation-play-state: paused; }
 @keyframes partner-scroll { to { transform: translateY(-50%); } }
 h2 { font-size: 32px; line-height: 1.25; letter-spacing: -.65px; font-weight: 500; margin: 0 0 32px; }
@@ -61,7 +61,8 @@ h2 { font-size: 32px; line-height: 1.25; letter-spacing: -.65px; font-weight: 50
 .article-card:hover { transform: translateY(-4px); box-shadow: 0 6px 16px #0002; }
 .article-card a { display: block; height: 100%; }
 .article-card img { width: 100%; height: 200px; object-fit: cover; }
-.article-card h3 { font-size: 16px; font-weight: 500; line-height: 1.2; padding: 12px; margin: 0; min-height: 84px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.article-title { padding: 12px; min-height: 84px; }
+.article-card h3 { font-size: 16px; font-weight: 500; line-height: 1.2; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .events-section { background: #066bac; color: white; padding-block: 48px; }
 .events-section h2 { margin-bottom: 12px; }
 .section-description { font-size: 16px; line-height: 1.5; margin: 0 0 32px; }
@@ -103,7 +104,7 @@ h2 { font-size: 32px; line-height: 1.25; letter-spacing: -.65px; font-weight: 50
   .desktop-nav { gap: 24px; }
   .introduction { gap: 48px; }
   .partners { gap: 32px; }
-  .partner img { max-width: 120px; }
+  .partner img { max-width: min(120px, 100%); }
   h1 { font-size: 36px; line-height: 1.4; }
   .event-card h3 { font-size: 19px; }
   .event-detail { font-size: 14px; gap: 8px; }
@@ -133,12 +134,13 @@ h2 { font-size: 32px; line-height: 1.25; letter-spacing: -.65px; font-weight: 50
   .desktop-break { display: none; }
   .introduction p { font-size: 16px; }
   .partners { height: 260px; gap: 40px; max-width: 480px; width: 100%; margin-inline: auto; }
-  .partner img { max-width: 130px; }
+  .partner img { max-width: min(130px, 100%); }
   .articles-section, .events-section { padding-block: 40px; }
   h2 { font-size: 28px; margin-bottom: 24px; }
   .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .article-card img { height: auto; aspect-ratio: 1.2; }
-  .article-card h3 { font-size: 15px; padding: 12px; min-height: 96px; }
+  .article-title { min-height: 96px; }
+  .article-card h3 { font-size: 15px; }
   .event-grid { grid-template-columns: 1fr; gap: 36px; }
   .event-card h3 { font-size: 20px; margin-bottom: 16px; }
   .event-detail { font-size: 16px; gap: 12px; }
@@ -157,7 +159,8 @@ h2 { font-size: 32px; line-height: 1.25; letter-spacing: -.65px; font-weight: 50
   .site-header { padding-inline: 16px; }
   .brand span { margin-left: 8px; padding-left: 8px; }
   .article-grid { gap: 12px; }
-  .article-card h3 { font-size: 14px; padding: 10px; }
+  .article-title { padding: 10px; }
+  .article-card h3 { font-size: 14px; }
   .membership h2 { font-size: 32px; }
 }
 @media (prefers-reduced-motion: reduce) {

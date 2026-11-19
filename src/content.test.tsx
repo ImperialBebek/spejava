@@ -9,6 +9,8 @@ test('all non-homepage links preserve existing SPE Java destinations', () => {
   for (const item of navigation) {
     assert.equal(new URL(legacyUrl(item.path)).origin, 'https://spejava.com')
   }
+  const eventsMenu = navigation.find((item) => item.label === 'Events')
+  assert.equal(eventsMenu?.children?.find((item) => item.label === 'Annual Energy Symposium')?.url, 'https://spejava.com/articles/aes')
   for (const article of articles) assert.match(article.slug, /^[a-z0-9-]+$/)
 })
 
