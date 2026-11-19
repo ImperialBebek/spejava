@@ -40,6 +40,16 @@ test('homepage renders crawlable headings and links without JavaScript', () => {
   for (const post of instagramPosts) assert.ok(html.includes(post.permalink), 'Instagram posts must be available without JavaScript')
 })
 
+test('LinkedIn uses native iframe lazy loading without a nested visibility gate', () => {
+  const html = renderToStaticMarkup(<App />)
+  const iframe = html.match(/<iframe\b[^>]*>/)?.[0]
+  assert.ok(iframe)
+  assert.match(iframe, /loading="lazy"/)
+  assert.ok(iframe.includes('https://static.elfsight.com/platform/platform.js'))
+  assert.ok(iframe.includes('elfsight-app-3ce07fd6-0202-441b-8bc4-ed1382b6d543'))
+  assert.ok(!iframe.includes('data-elfsight-app-lazy'), 'the inner visibility gate can stall when scrolled past the iframe origin')
+})
+
 test('Instagram feed accepts valid posts and rejects malformed or unsafe destinations', () => {
   const post = { ...instagramPosts[0], mediaUrl: 'https://images.feedspring.com/post.webp' }
   assert.deepEqual(readInstagramPosts({ data: { media: [post] } }), [post])

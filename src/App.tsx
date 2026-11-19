@@ -100,7 +100,7 @@ function LatestPosts() {
       className="social-feed"
       title="Latest SPE Java LinkedIn posts"
       loading="lazy"
-      srcDoc={'<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;font-family:sans-serif}</style></head><body><script src="https://static.elfsight.com/platform/platform.js" async></script><div class="elfsight-app-3ce07fd6-0202-441b-8bc4-ed1382b6d543" data-elfsight-app-lazy></div></body></html>'}
+          srcDoc={'<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;font-family:sans-serif}</style></head><body><script src="https://static.elfsight.com/platform/platform.js" async></script><div class="elfsight-app-3ce07fd6-0202-441b-8bc4-ed1382b6d543"></div></body></html>'}
       sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       referrerPolicy="strict-origin-when-cross-origin"
     />
