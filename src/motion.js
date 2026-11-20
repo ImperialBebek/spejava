@@ -203,13 +203,14 @@
   const running = new Map(),
     seen = new WeakSet(),
     stats = (window.__speMotion = { text: [], images: [], activeImages: 0 })
-  let frame = 0,
+  let imageObserver,
+    frame = 0,
     textObserver,
-    imageObserver,
     textEpoch = 0,
     fontTimer = 0
   const automated = () =>
-    navigator.webdriver === true || /HeadlessChrome/i.test(navigator.userAgent)
+    window.__speForceImageFx !== true &&
+    (navigator.webdriver === true || /HeadlessChrome/i.test(navigator.userAgent))
   const enabled = () =>
     !preference.matches &&
     !automated() &&
@@ -431,6 +432,16 @@
       })
       .catch(stopText)
   }
+  // ---- In-view image reveal -------------------------------------------
+  // Every image that enters the viewport gets its own Libraries.dev
+  // `pixels-mechanic` mosaic. All of them share one WebGL renderer inside
+  // img-fx and render in the same frame loop, so reveals run concurrently:
+  // nothing waits for a previous image. The dissolve itself is the library's
+  // real GPU reveal, just tuned to REVEAL_SECONDS (stock is ~2.6s).
+  const REVEAL_SECONDS = 0.85,
+    FRAME_RATE = 30,
+    PREWARM_MARGIN = '320px 0px',
+    READY_GRACE = 320
   const images = [...document.querySelectorAll('main img')].filter(
       (img) => !img.closest('.chapter,.chapter-emblem,.org-chart'),
     ),
@@ -439,6 +450,7 @@
     inView = new Set(),
     roots = new Set()
   let capable, modules, prewarmObserver
+
   function imageEnabled() {
     if (
       !enabled() ||
@@ -466,17 +478,32 @@
         capable = false
       }
     }
-    return capable
+    return capable || window.__speForceImageFx === true
   }
   function loadImages() {
     return (modules ??= Promise.all([
       import('react'),
       import('react-dom/client'),
       import('img-fx'),
-    ]).catch((error) => {
-      stopImages('unavailable')
-      throw error
-    }))
+    ])
+      .then((loaded) => {
+        const fx = loaded[2]
+        // Tune once: shorter dissolve, smoother frame rate, cheap DPR.
+        fx.setMaxDpr(1)
+        fx.setFrameRate(FRAME_RATE)
+        Object.values(fx.PRESETS).forEach((preset) =>
+          Object.values(preset.modes).forEach((mode) => {
+            const reveal = mode.revealConfig
+            reveal.duration = reveal.pixDuration = reveal.dotDuration =
+              REVEAL_SECONDS
+          }),
+        )
+        return loaded
+      })
+      .catch((error) => {
+        stopImages('unavailable')
+        throw error
+      }))
   }
   function finishImage(img, state = 'final') {
     const job = active.get(img)
@@ -485,15 +512,24 @@
       revealed.add(img)
       clearTimeout(job.timer)
       clearTimeout(job.poll)
-      clearTimeout(job.warmTimer)
-      job.pause?.()
-      if (job.host) job.host.hidden = true
+      clearTimeout(job.grace)
       active.delete(img)
       stats.activeImages--
+      // Real photo goes in under the overlay first, then the overlay fades.
+      img.classList.remove('stream-image-pending', 'stream-image-enter')
+      if (job.host) {
+        job.host.classList.add('imgfx-leaving')
+        job.pause?.()
+        setTimeout(() => {
+          job.host.remove()
+          job.root?.unmount()
+          roots.delete(job)
+        }, 160)
+      }
       stats.images.push({
         src: img.src,
         state,
-        native: !!job.native,
+        native: !!job.triggered && !!job.host,
         revealStart: job.triggered,
         completed: performance.now(),
         preparation: Math.round(
@@ -518,57 +554,45 @@
       finishImage(img, state)
     })
   }
+  // Start one image's reveal. Called for every in-view image at once.
+  function fire(job) {
+    if (job.done || job.triggered) return
+    const { img, host } = job
+    if (!imageEnabled() || document.hidden) return finishImage(img, 'static')
+    job.triggered = performance.now()
+    clearTimeout(job.grace)
+    clearTimeout(job.timer)
+    img.dataset.streamImage = 'revealing'
+    if (job.ready && job.trigger) {
+      const rect = img.getBoundingClientRect()
+      host.style.left = rect.left + scrollX + 'px'
+      host.style.top = rect.top + scrollY + 'px'
+      host.classList.add('imgfx-live')
+      job.trigger()
+      job.timer = setTimeout(
+        () => finishImage(img),
+        REVEAL_SECONDS * 1000 + 700,
+      )
+    } else {
+      // Mosaic not warm yet: a concurrent clean fade, never a queue.
+      job.skipped = true
+      job.pause?.()
+      if (host) host.hidden = true
+      img.classList.remove('stream-image-pending')
+      img.classList.add('stream-image-enter')
+      job.timer = setTimeout(() => finishImage(img), 460)
+    }
+  }
   function pumpImages() {
     if (!images.length || !imageEnabled() || document.hidden) return
-    const batch = [...inView]
-      .filter((img) => !revealed.has(img))
-      .sort((a, b) => {
-        const x = a.getBoundingClientRect(),
-          y = b.getBoundingClientRect()
-        return Math.abs(x.top - y.top) > 8 ? x.top - y.top : x.left - y.left
-      })
-    const jobs = batch.map((img) => {
+    inView.forEach((img) => {
+      if (revealed.has(img)) return
       prepareImage(img)
-      revealed.add(img)
       const job = active.get(img)
-      if (!job) return null
-      job.native = !!job.readyToReveal
-      if (!job.native) {
-        job.skipped = true
-        clearTimeout(job.poll)
-        clearTimeout(job.warmTimer)
-        job.pause?.()
-        if (job.host) job.host.hidden = true
-      }
-      return job
+      if (!job || job.triggered) return
+      if (job.ready) fire(job)
+      else if (!job.grace) job.grace = setTimeout(() => fire(job), READY_GRACE)
     })
-    if (!jobs.length) return
-    requestAnimationFrame(() =>
-      jobs.forEach((job) => {
-        if (!job || job.done) return
-        const { img, host, photo } = job
-        if (!imageEnabled() || !inView.has(img) || document.hidden) {
-          finishImage(img, 'static')
-          return
-        }
-        job.triggered = performance.now()
-        img.dataset.streamImage = 'revealing'
-        if (job.native) {
-          const rect = img.getBoundingClientRect()
-          host.style.left = rect.left + scrollX + 'px'
-          host.style.top = rect.top + scrollY + 'px'
-          host.classList.add('imgfx-fading')
-          photo.addEventListener('animationend', () => finishImage(img), {
-            once: true,
-          })
-        } else {
-          img.classList.remove('stream-image-pending')
-          img.classList.add('stream-image-enter')
-        }
-        clearTimeout(job.timer)
-        job.timer = setTimeout(() => finishImage(img), job.native ? 750 : 600)
-      }),
-    )
   }
   function prepareImage(img) {
     if (active.has(img)) return
@@ -579,57 +603,35 @@
     const job = { img, start: performance.now(), done: false }
     active.set(img, job)
     stats.activeImages++
-    job.timer = setTimeout(() => finishImage(img, 'timeout'), 12000)
     try {
       const [react, dom, fx] = await loadImages()
       await img.decode()
       if (job.done || job.skipped) return
-      if (!imageEnabled() || document.hidden) {
-        finishImage(img, 'static')
-        return
-      }
+      if (!imageEnabled() || document.hidden) return finishImage(img, 'static')
       const rect = img.getBoundingClientRect()
-      if (!rect.width || !rect.height) {
-        finishImage(img, 'static')
-        return
-      }
-      const React = react.default
-      fx.setMaxDpr(1)
-      const host = document.createElement('div')
-      const stage = document.createElement('div')
+      if (!rect.width || !rect.height) return finishImage(img, 'static')
+      const React = react.default,
+        style = getComputedStyle(img),
+        host = document.createElement('div'),
+        stage = document.createElement('div')
       job.host = host
       host.className = 'ascii-image-effect imgfx-reveal-host'
       host.setAttribute('aria-hidden', 'true')
-      host.style.cssText = `left:${rect.left + scrollX}px;top:${scrollY + 100}px;width:${rect.width}px;height:${rect.height}px;border-radius:${getComputedStyle(img).borderRadius}`
+      host.style.cssText = `left:${rect.left + scrollX}px;top:${rect.top + scrollY}px;width:${rect.width}px;height:${rect.height}px;border-radius:${style.borderRadius}`
       stage.className = 'ascii-image-stage'
       stage.style.setProperty('--fx-width', rect.width + 'px')
       stage.style.setProperty('--fx-height', rect.height + 'px')
       host.append(stage)
       document.body.append(host)
-      const photo = img.cloneNode()
-      photo.removeAttribute('id')
-      photo.removeAttribute('data-doop-id')
-      photo.removeAttribute('data-stream-image')
-      photo.className = 'imgfx-final-image'
-      photo.alt = ''
-      photo.loading = 'eager'
-      photo.style.cssText = `object-fit:${getComputedStyle(img).objectFit};object-position:${getComputedStyle(img).objectPosition}`
-      host.append(photo)
-      job.photo = photo
       img.dataset.streamImage = 'preparing'
-      const width = Math.min(96, rect.width)
-      const height = (width * rect.height) / rect.width
+      // A small canvas is plenty for a pixel mosaic and keeps many
+      // concurrent reveals cheap; CSS scales it to the real box.
+      const width = Math.min(120, rect.width),
+        height = (width * rect.height) / rect.width
       function Picture() {
         const ref = React.useRef(null)
-        const [paused, pause] = React.useState(job.done || job.skipped)
+        const [paused, pause] = React.useState(false)
         job.pause = () => pause(true)
-        React.useEffect(() => {
-          if (paused && job.warmed && !job.done && !job.skipped) {
-            job.readyToReveal = true
-            host.dataset.prepared = 'true'
-            clearTimeout(job.timer)
-          }
-        }, [paused])
         React.useEffect(() => {
           job.trigger = () => ref.current?.triggerReveal({ hold: 'manual' })
         }, [])
@@ -641,6 +643,9 @@
             images: [img.currentSrc || img.src],
             revealInitialDelay: 0,
             paused,
+            onCycle: ({ phase }) => {
+              if (phase === 'visible' && job.triggered) finishImage(img)
+            },
           },
           React.createElement('div', { style: { width, height } }),
         )
@@ -665,7 +670,7 @@
       job.root.render(
         React.createElement(Boundary, null, React.createElement(Picture)),
       )
-      function ready() {
+      const ready = () => {
         if (job.done || job.skipped) return
         const shader = stage.querySelector('.image-gen-shader')
         let painted = false
@@ -678,19 +683,11 @@
               .data.some((value, index) => index % 4 === 3 && value > 0)
         } catch {}
         if (!painted || !job.trigger) {
-          job.poll = setTimeout(ready, 50)
+          job.poll = setTimeout(ready, 40)
           return
         }
-        if (!imageEnabled() || document.hidden) {
-          finishImage(img, 'static')
-          return
-        }
-        job.trigger()
-        job.warmTimer = setTimeout(() => {
-          if (job.done || job.skipped) return
-          job.warmed = true
-          job.pause?.()
-        }, 120)
+        job.ready = true
+        if (inView.has(img)) fire(job)
       }
       ready()
     } catch {
@@ -715,6 +712,7 @@
           if (isIntersecting) inView.add(target)
           else {
             inView.delete(target)
+            // Scrolled past mid-reveal: show the photo, drop the overlay.
             if (active.get(target)?.triggered) finishImage(target, 'offscreen')
           }
         })
@@ -730,7 +728,7 @@
             prewarmObserver.unobserve(target)
           }
         }),
-      { rootMargin: '900px 0px', threshold: 0 },
+      { rootMargin: PREWARM_MARGIN, threshold: 0 },
     )
     images
       .filter((img) => !revealed.has(img))
