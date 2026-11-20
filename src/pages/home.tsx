@@ -58,7 +58,14 @@ export default function HomePage() {
           role="group"
           aria-label="Rotating Earth with Indonesia highlighted in blue"
         >
-          <div className="earth-stage">
+          <button
+            type="button"
+            className="earth-stage earth-toggle"
+            data-earth-control
+            aria-label="Earth with Indonesia highlighted in blue"
+            aria-pressed="false"
+            disabled
+          >
             <pre className="ascii-art" data-doop-id="rmrk1w" aria-hidden="true">
               <span className="earth-ocean">············</span>
               <span className="earth-ocean">···························</span>
@@ -378,15 +385,6 @@ export default function HomePage() {
               <span className="earth-land">++++++++++++</span>
             </pre>
             <span className="earth-limb" aria-hidden="true"></span>
-          </div>
-          <button
-            type="button"
-            className="motion-pause sr-only"
-            aria-pressed="false"
-            hidden={true}
-            disabled={true}
-          >
-            Pause motion
           </button>
         </figure>
       </section>

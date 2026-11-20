@@ -1778,15 +1778,16 @@ dd a,
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
-.earth-surface .motion-pause {
-  color: var(--ink);
-  border: 1px solid var(--ink);
-  background: var(--bone);
-  min-height: 44px;
-  padding: 8px 10px;
-  font: 11px var(--mono);
-  border-radius: 4px;
-  flex-shrink: 0;
+.earth-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+}
+.earth-toggle:disabled {
+  cursor: default;
 }
 .earth-surface :focus-visible {
   outline-color: var(--blue);
@@ -2004,10 +2005,6 @@ dd a,
   font: 11px var(--mono);
   padding: 8px 12px;
 }
-.earth-surface .motion-pause:disabled {
-  color: var(--shale);
-  border-color: var(--rule);
-}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -2018,18 +2015,6 @@ dd a,
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-.earth-surface .motion-pause:focus-visible {
-  top: 12px;
-  right: 12px;
-  width: auto;
-  height: auto;
-  padding: 8px 10px;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
-  border: 1px solid var(--ink);
 }
 @media (max-width: 1100px) {
   .brand img {

@@ -32,7 +32,7 @@ function renderEarthHTML(rotation,data){
 
 
 (async()=>{
- const surface=document.querySelector('.earth-surface');if(!surface)return;const stage=surface.querySelector('.earth-stage'),pre=surface.querySelector('.ascii-art'),pause=surface.querySelector('.motion-pause');
+ const surface=document.querySelector('.earth-surface');if(!surface)return;const stage=surface.querySelector('.earth-stage'),pre=surface.querySelector('.ascii-art'),pause=surface.querySelector('[data-earth-control]');
  let data;try{const response=await fetch('/media/earth.json');if(!response.ok)return;data=await response.json()}catch{return}if(pause)pause.disabled=false;const reduced=(window.__speReducedMotion??=matchMedia('(prefers-reduced-motion: reduce)'));
  let id=0,last=0,rotation=115,visible=true,paused=false,frames=0;
  function draw(){pre.innerHTML=renderEarthHTML(rotation,data);surface.dataset.frames=++frames}
@@ -41,7 +41,7 @@ function renderEarthHTML(rotation,data){
   const range=document.createRange();range.selectNodeContents(sample);const width=range.getBoundingClientRect().width/100;sample.remove();
   if(width){stage.style.setProperty('--earth-cell',width+'px');pre.style.lineHeight=2*width+'px';stage.dataset.cellWidth=width}
  }
- function controls(){surface.dataset.state=id?'running':'paused';if(pause){pause.hidden=reduced.matches;pause.textContent=paused?'Resume motion':'Pause motion';pause.setAttribute('aria-pressed',String(paused))}}
+ function controls(){surface.dataset.state=id?'running':'paused';if(pause){pause.disabled=reduced.matches;const label=reduced.matches?'Earth with Indonesia highlighted in blue':paused?'Resume globe motion':'Pause globe motion';pause.setAttribute('aria-label',label);pause.title=label;pause.setAttribute('aria-pressed',String(paused))}}
  function frame(now){
   id=0;if(document.hidden||!visible||paused||reduced.matches){controls();return}
   if(!last)last=now;
