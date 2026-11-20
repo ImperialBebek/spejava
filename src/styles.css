@@ -2505,6 +2505,9 @@ body span.response-glyph {
   }
 }
 @media print {
+  .skip {
+    display: none;
+  }
   .site-header {
     position: static;
     max-height: none;
