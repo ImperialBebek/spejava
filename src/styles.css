@@ -629,7 +629,8 @@ dt,
   border: 0;
   padding: 0;
 }
-.toolbar legend {
+.filter-group legend {
+  padding: 0;
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 12px;
@@ -1923,11 +1924,14 @@ dd a,
 .mobile-nav {
   flex-basis: 100%;
 }
-.toolbar {
+.filter-group {
   border: 0;
   min-width: 0;
   padding: 0;
   margin: 0 0 24px;
+}
+.toolbar {
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -2481,4 +2485,10 @@ a:focus-visible .ascii-arrow {
   }
 }
 
-:root{color-scheme:light}
+:root {
+  color-scheme: light;
+}
+
+.toolbar:has(:focus-visible) .chip-indicator {
+  transition: none;
+}

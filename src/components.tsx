@@ -306,19 +306,21 @@ export function Filters({
   onChange: (value: string) => void
 }) {
   return (
-    <fieldset className="toolbar">
+    <fieldset className="filter-group">
       <legend>{legend}</legend>
-      {options.map((option) => (
-        <button
-          className="chip"
-          type="button"
-          key={option}
-          aria-pressed={option === value}
-          onClick={() => onChange(option)}
-        >
-          {option}
-        </button>
-      ))}
+      <div className="toolbar">
+        {options.map((option) => (
+          <button
+            className="chip"
+            type="button"
+            key={option}
+            aria-pressed={option === value}
+            onClick={() => onChange(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
     </fieldset>
   )
 }

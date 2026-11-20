@@ -100,13 +100,24 @@
       marker.style.transform = `translate(${r.left - parent.left}px,${r.bottom - parent.top + 4}px) scaleX(${r.width})`
       marker.style.opacity = '1'
     }
-    toolbar.addEventListener('click', locate)
-    preference.addEventListener('change', locate)
-    if ('ResizeObserver' in window) new ResizeObserver(locate).observe(toolbar)
-    locate()
+    let measurement = 0
+    const schedule = () => {
+      cancelAnimationFrame(measurement)
+      measurement = requestAnimationFrame(locate)
+    }
+    new MutationObserver(schedule).observe(toolbar, {
+      attributes: true,
+      attributeFilter: ['aria-pressed'],
+      subtree: true,
+      childList: true,
+    })
+    preference.addEventListener('change', schedule)
+    if ('ResizeObserver' in window)
+      new ResizeObserver(schedule).observe(toolbar)
+    document.fonts?.ready.then(schedule)
+    schedule()
   })
 })()
-
 ;(() => {
   const preference = (window.__speReducedMotion ??= matchMedia(
     '(prefers-reduced-motion: reduce)',
