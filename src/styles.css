@@ -2492,10 +2492,25 @@ body span.response-glyph {
   }
 }
 @media print {
+  .skip {
+    display: none;
+  }
   .site-header {
     position: static;
     max-height: none;
     overflow: visible;
+  }
+  .home-earth .earth-surface {
+    break-inside: avoid;
+  }
+  .home-earth .earth-stage {
+    --earth-cell: 1ch !important;
+    font: 400 5.1px var(--mono);
+    height: 86ch;
+  }
+  .home-earth .earth-surface .ascii-art {
+    font-size: inherit;
+    line-height: 2ch !important;
   }
   .response-layer,
   .imgfx-reveal-host {
