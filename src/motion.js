@@ -568,7 +568,9 @@
       host.style.left = rect.left + scrollX + 'px'
       host.style.top = rect.top + scrollY + 'px'
       host.classList.add('imgfx-live')
-      job.trigger()
+      job.resume?.()
+      // Let the unpaused instance render once before the reveal starts.
+      requestAnimationFrame(() => !job.done && job.trigger())
       job.timer = setTimeout(
         () => finishImage(img),
         REVEAL_SECONDS * 1000 + 700,
@@ -632,6 +634,7 @@
         const ref = React.useRef(null)
         const [paused, pause] = React.useState(false)
         job.pause = () => pause(true)
+        job.resume = () => pause(false)
         React.useEffect(() => {
           job.trigger = () => ref.current?.triggerReveal({ hold: 'manual' })
         }, [])
@@ -687,6 +690,7 @@
           return
         }
         job.ready = true
+        if (!inView.has(img)) job.pause?.()
         if (inView.has(img)) fire(job)
       }
       ready()
@@ -712,6 +716,8 @@
           if (isIntersecting) inView.add(target)
           else {
             inView.delete(target)
+            const idle = active.get(target)
+            if (idle?.ready && !idle.triggered) idle.pause?.()
             // Scrolled past mid-reveal: show the photo, drop the overlay.
             if (active.get(target)?.triggered) finishImage(target, 'offscreen')
           }
