@@ -83,7 +83,7 @@ export interface ProgramEdition {
 export function isEditionOpen(edition: ProgramEdition, now = new Date()) {
   const start = Date.parse(`${edition.opens}T00:00:00+07:00`)
   const end = Date.parse(`${edition.closes}T23:59:59+07:00`)
-  return edition.status === 'open' && isSafeUrl(edition.registrationUrl) && start <= +now && end >= +now
+  return edition.status === 'open' && !edition.registrationUrl.startsWith('/') && isSafeUrl(edition.registrationUrl) && start <= +now && end >= +now
 }
 export interface Content {
   posts: Post[]
@@ -115,7 +115,8 @@ export function isSafeUrl(value: string) {
   if (/[\u0000-\u0020\\]/.test(value)) return false
   if (value.startsWith('/') && !value.startsWith('//')) return true
   try {
-    return new URL(value).protocol === 'https:'
+    const url = new URL(value)
+    return url.protocol === 'https:' && !url.username && !url.password
   } catch {
     return false
   }

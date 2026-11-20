@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import type { BlockContent, PhrasingContent, RootContent } from 'mdast'
 import { snapshot } from '../src/data'
+import { isSafeUrl } from '../src/model'
 import type { PortableTextBlock, PortableTextSpan } from '@portabletext/types'
 
 export function portableBody(markdown: string): PortableTextBlock[] {
@@ -32,6 +33,11 @@ export function portableBody(markdown: string): PortableTextBlock[] {
           markDefs,
         )
       if (node.type === 'link') {
+        if (
+          !isSafeUrl(node.url) &&
+          !/^mailto:[^\\s@]+@[^\\s@]+$/.test(node.url)
+        )
+          return phrasing(node.children, marks, markDefs)
         const id = key()
         markDefs!.push({ _type: 'link', _key: id, href: node.url })
         return phrasing(node.children, [...marks, id], markDefs)
@@ -102,7 +108,7 @@ export function portableBody(markdown: string): PortableTextBlock[] {
   return blocks
 }
 
-const documents = [
+export const documents = [
   ...snapshot.posts.map(
     ({
       image,
@@ -122,7 +128,7 @@ const documents = [
             registrationUrl: post.event.registrationUrl || undefined,
           }
         : undefined,
-      _id: `post.${post.slug}`,
+      _id: `post-${post.slug}`,
       _type: 'post',
       slug: { _type: 'slug', current: post.slug },
       body: portableBody(post.body),
@@ -139,7 +145,7 @@ const documents = [
     ...chapter,
     website: chapter.website || undefined,
     email: chapter.email || undefined,
-    _id: `chapter.${chapter.slug}`,
+    _id: `chapter-${chapter.slug}`,
     _type: 'chapter',
     slug: { _type: 'slug', current: chapter.slug },
     body: portableBody(chapter.body),
@@ -151,7 +157,7 @@ const documents = [
   ...snapshot.programs.map(({ bodyBlocks: _blocks, ...program }) => ({
     ...program,
     year: program.year ?? undefined,
-    _id: `program.${program.slug}`,
+    _id: `program-${program.slug}`,
     _type: 'program',
     slug: { _type: 'slug', current: program.slug },
     body: portableBody(program.body),

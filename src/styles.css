@@ -2190,7 +2190,6 @@ dt,
   }
   .motion-ready .reveal-pending {
     opacity: 0;
-    transform: translateY(12px);
   }
   .motion-ready .reveal-target {
     transition:
@@ -2257,21 +2256,17 @@ dt,
 @keyframes spe-arrive {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 @keyframes spe-stamp {
   from {
     opacity: 0.4;
-    transform: scale(1.06);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2297,46 +2292,6 @@ dt,
     opacity: 1 !important;
     transform: none !important;
   }
-}
-body span.ascii-word,
-body span.ascii-final {
-  display: inline;
-  font: inherit;
-  color: inherit;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  white-space: inherit;
-  vertical-align: baseline;
-}
-.ascii-word {
-  position: relative;
-}
-body span.ascii-stream {
-  display: block;
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  font-family: var(--mono);
-  font-size: 0.8em;
-  font-weight: inherit;
-  line-height: inherit;
-  color: inherit;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  letter-spacing: 0.03em;
-  opacity: 0;
-}
-.ascii-stream:before {
-  content: attr(data-glyphs);
-}
-.is-scrambling > .ascii-final {
-  opacity: 0;
-}
-.is-scrambling > .ascii-stream {
-  opacity: 1;
 }
 .section-title {
   position: relative;
@@ -2367,22 +2322,6 @@ body span.ascii-stream {
   place-items: center;
   font: 18px/1 var(--mono);
 }
-.ascii-image-effect {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-  overflow: hidden;
-}
-.ascii-image-stage {
-  transform-origin: top left;
-}
-.ascii-image-stage .image-gen-root {
-  overflow: visible !important;
-}
-.ascii-image-stage .image-gen-root > canvas {
-  width: var(--fx-width) !important;
-  height: var(--fx-height) !important;
-}
 @media (prefers-reduced-motion: no-preference) {
   .ascii-divider-enter:before {
     animation: spe-divider var(--motion-enter) var(--motion-ease) both;
@@ -2403,24 +2342,6 @@ body span.ascii-stream {
   to {
     transform: scaleX(1);
     opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ascii-stream,
-  .ascii-image-effect {
-    display: none !important;
-  }
-  .ascii-final {
-    opacity: 1 !important;
-  }
-}
-@media print {
-  .ascii-stream,
-  .ascii-image-effect {
-    display: none !important;
-  }
-  .ascii-final {
-    opacity: 1 !important;
   }
 }
 @media (max-width: 760px) {
@@ -2491,4 +2412,91 @@ a:focus-visible .ascii-arrow {
 
 .toolbar:has(:focus-visible) .chip-indicator {
   transition: none;
+}
+
+body span.stream-source {
+  display: contents;
+  font: inherit;
+  color: transparent !important;
+  text-shadow: none !important;
+}
+.stream-preparing {
+  opacity: 0 !important;
+}
+body > .response-layer {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+body span.response-glyph {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  white-space: pre;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+}
+.stream-image-pending {
+  opacity: 0 !important;
+}
+.stream-image-enter {
+  animation: spe-image-appear 720ms var(--motion-ease) both;
+}
+@keyframes spe-image-appear {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .response-layer {
+    display: none !important;
+  }
+  body span.stream-source {
+    color: inherit !important;
+  }
+  .stream-preparing,
+  .stream-image-pending,
+  .stream-image-enter {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+@media print {
+  .response-layer {
+    display: none !important;
+  }
+  body span.stream-source {
+    color: inherit !important;
+  }
+  .stream-preparing,
+  .stream-image-pending,
+  .stream-image-enter {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-boot main :is(h1, h2, h3),
+  .motion-boot main img:not(.chapter img, .chapter-emblem img, .org-chart img) {
+    opacity: 0;
+  }
 }

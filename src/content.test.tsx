@@ -9,7 +9,7 @@ import { isEditionOpen, isPastEvent, type ProgramEdition } from './model'
 import { publicRoutes, resolveRoute } from './routes'
 import { Markdown } from './richtext'
 import { validateContent, validatePost, validateProgram } from './validation'
-import { portableBody } from '../scripts/export-sanity'
+import { documents, portableBody } from '../scripts/export-sanity'
 
 test('all 34 legacy addresses resolve within the 47-route site', () => {
   const legacy = JSON.parse(readFileSync('content/legacy-routes.json', 'utf8'))
@@ -289,4 +289,47 @@ test('programme social/search descriptions reflect confirmed open editions', () 
       !tags.includes('Future editions and registration await confirmation'),
     )
   }
+})
+
+test('relative URLs cannot open a programme registration', () => {
+  const edition: ProgramEdition = {
+    year: 2026,
+    title: 'Test',
+    opens: '2020-01-01',
+    closes: '2099-01-01',
+    registrationUrl: '/membership',
+    status: 'open',
+    body: 'Test',
+    sponsors: [],
+  }
+  assert.equal(isEditionOpen(edition), false)
+  assert.throws(() =>
+    validateProgram({ ...snapshot.programs[0], editions: [edition] }),
+  )
+})
+
+test('migration IDs are unique and publicly readable root-namespace IDs', () => {
+  assert.equal(documents.length, 40)
+  assert.equal(
+    new Set(documents.map((document) => document._id)).size,
+    documents.length,
+  )
+  for (const document of documents) {
+    assert.match(document._id, /^(post|chapter|program)-[a-z0-9-]+$/)
+    assert.ok(!document._id.includes('.'))
+  }
+})
+
+test('Portable Text keeps unsafe legacy link labels without unsafe annotations', () => {
+  const blocks = portableBody(
+    '[Legacy](http://example.com) and [bad](https://user:password@example.com) and [Safe](https://example.com)',
+  )
+  const links = blocks.flatMap((block) => block.markDefs || [])
+  assert.deepEqual(
+    links.map((link) => link.href),
+    ['https://example.com'],
+  )
+  const html = render(<Markdown blocks={blocks}>{''}</Markdown>)
+  assert.ok(html.includes('Legacy') && html.includes('bad'))
+  assert.ok(!html.includes('href="http:') && !html.includes('user:password'))
 })

@@ -28,10 +28,12 @@ Use `npm run types:worker` after changing Wrangler bindings. No pre-commit hooks
 
 ## Sanity setup
 
+The review uses SPE Java Section project `q8u3iykd` and its public `production` dataset. The self-hosted Studio and schema registry are configured; API credentials are never included in the website.
+
 1. Reuse an SPE-owned project, or create one at https://www.sanity.io/manage with a public dataset named `production`. Only public website content belongs in this dataset, never registrations or private member information.
 2. Put the public Project ID/dataset into the default and preview `vars` in `wrangler.jsonc`. The website needs no read token. Build-time `SANITY_PROJECT_ID` / `SANITY_DATASET` overrides must match the runtime bindings.
 3. Add exact permitted editor origins in Sanity's API → CORS origins with credentials enabled: `https://redesign.spejava.pages.dev`, `https://spejava.pages.dev`, and `http://localhost:3333` when developing Studio locally. Add `https://spejava.com` only as part of an approved production rollout. No wildcard credential origins.
-4. Run `npm run cms:export` to create `studio/migration.ndjson`. It contains 40 deterministic records, proper Portable Text, original source copy and locked legacy slugs. Import with **create-if-absent** semantics, never replace existing editorial changes. An authorized Sanity MCP integration can create the records; the authenticated CLI equivalent is `sanity dataset import migration.ndjson production --missing` from `studio/`. Inspect the existing dataset before importing.
+4. Run `npm run cms:export` to create `studio/migration.ndjson`. It contains 40 deterministic root-namespace records (no dots in public IDs), proper Portable Text, original source copy and locked legacy slugs. Import with **create-if-absent** semantics, never replace existing editorial changes. An authorized Sanity MCP integration can create the records; the authenticated CLI equivalent is `sanity dataset import migration.ndjson production --missing` from `studio/`. Inspect the existing dataset before importing.
 5. Rebuild and deploy the review branch. Studio is self-hosted at `/admin/` using native Sanity authentication; it requires no GitHub app, custom OAuth service or separate Studio-hosting token. Invite only authorized SPE editors using the roles available on the selected Sanity plan.
 
 Unconfigured deployments deliberately show the portable snapshot and an explicit editor setup-pending page. A configured CMS outage fails with a retryable 503 rather than silently republishing old snapshot content.
@@ -53,7 +55,7 @@ Existing images remain owned static assets with provenance. Replacing a photo in
 
 The rotation-only ASCII earth supports Pause/Resume, stops offscreen/in background tabs, and freezes under reduced motion. Geography is derived from public-domain [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) data supplied in the design handoff. Glyph dividers and arrow feedback remain in place.
 
-Text and image effects are currently disabled pending the revised design handoff: images should fade in from invisible, and text should stream from 0–100% using ordinary random characters without changing container geometry. Original plain HTML and images remain visible in this interim build. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
+Designer’s v3 text streams from 0–100% with a four-character alphanumeric tail, using final glyph rectangles without changing source layout. Images begin invisible and fade in over 720ms with a slight blur clearing; img-fx/WebGL/CDN imports are removed. Semantic source text remains accessible during the decorative overlay. Reduced motion, no JS, unsupported observers, slow bootstrap and font failure show final plain content. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
 
 ## Cloudflare deployment
 

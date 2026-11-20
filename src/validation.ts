@@ -46,7 +46,11 @@ function slug(value: RecordValue) {
 }
 function url(value: RecordValue, key: string) {
   const result = text(value, key)
-  if (result && !isSafeUrl(result))
+  if (
+    result &&
+    (!isSafeUrl(result) ||
+      (key === 'registrationUrl' && result.startsWith('/')))
+  )
     throw new Error(`Unsafe content URL: ${key}`)
   return result
 }

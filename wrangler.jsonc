@@ -5,13 +5,13 @@
   "compatibility_date": "2026-11-20",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "SANITY_PROJECT_ID": "",
+    "SANITY_PROJECT_ID": "q8u3iykd",
     "SANITY_DATASET": "production"
   },
   "env": {
     "preview": {
       "vars": {
-        "SANITY_PROJECT_ID": "",
+        "SANITY_PROJECT_ID": "q8u3iykd",
         "SANITY_DATASET": "production"
       }
     }

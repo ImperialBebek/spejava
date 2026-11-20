@@ -19,7 +19,7 @@
   }
   function start() {
     release()
-    if (preference.matches) return
+    if (preference.matches || window.__speMotionBoot?.expired) return
     root.classList.add('motion-ready')
     const hero = document.querySelector(
       '.home-hero,.page-head,.exploration-hero',
@@ -195,4 +195,336 @@
       layer.textContent = '→'
     }, 160)
   })
+})()
+;(() => {
+  const preference = (window.__speReducedMotion ??= matchMedia(
+    '(prefers-reduced-motion: reduce)',
+  ))
+  const running = new Map(),
+    seen = new WeakSet(),
+    stats = (window.__speMotion = { text: [], images: [], activeImages: 0 })
+  let frame = 0,
+    textObserver,
+    imageObserver,
+    textEpoch = 0,
+    fontTimer = 0
+  const automated = () =>
+    navigator.webdriver === true || /HeadlessChrome/i.test(navigator.userAgent)
+  const enabled = () =>
+    !preference.matches &&
+    !automated() &&
+    !window.__speMotionBoot?.expired &&
+    'IntersectionObserver' in window
+  const alphabet = (character) =>
+    /[0-9]/.test(character)
+      ? '0123456789'
+      : character === character.toUpperCase()
+        ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        : 'abcdefghijklmnopqrstuvwxyz'
+
+  const measure = document.createElement('canvas').getContext('2d'),
+    pools = new Map()
+  function settle(element) {
+    const item = running.get(element)
+    if (!item) return
+    clearTimeout(item.safety)
+    item.sources.forEach(({ wrapper, node }) => wrapper.replaceWith(node))
+    item.layer.remove()
+    element.dataset.asciiState = 'final'
+    running.delete(element)
+  }
+  function tick(now) {
+    frame = 0
+    const positions = [...running].map(([element, item]) => ({
+      element,
+      item,
+      rect: element.getBoundingClientRect(),
+    }))
+    positions.forEach(({ item, element, rect }) => {
+      if (!element.isConnected || element.textContent !== item.original) {
+        settle(element)
+        return
+      }
+      const progress = Math.min(1, (now - item.start) / item.duration)
+      if (progress === 1) {
+        settle(element)
+        return
+      }
+      item.layer.style.transform = `translate(${rect.left + scrollX}px,${rect.top + scrollY}px)`
+      const head = Math.floor(progress * (item.chars.length + 4)),
+        resolved = Math.max(0, head - 4)
+      item.chars.forEach(({ span, character, pool }, index) => {
+        const visible =
+          index < resolved || (index < head && /[a-zA-Z0-9]/.test(character))
+        span.style.opacity = visible ? '1' : '0'
+        span.textContent =
+          index < resolved
+            ? character
+            : index < head
+              ? pool[Math.floor(Math.random() * pool.length)]
+              : ''
+      })
+    })
+    if (running.size) frame = requestAnimationFrame(tick)
+  }
+  function stream(element) {
+    element.classList.remove('stream-preparing')
+    if (!enabled() || seen.has(element)) return
+    seen.add(element)
+    const original = element.textContent,
+      box = element.getBoundingClientRect(),
+      layer = document.createElement('span'),
+      sources = [],
+      chars = []
+    layer.className = 'response-layer'
+    layer.setAttribute('aria-hidden', 'true')
+    layer.style.cssText = `left:0;top:0;transform:translate(${box.left + scrollX}px,${box.top + scrollY}px);width:${box.width}px;height:${box.height}px`
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) =>
+          node.textContent.trim() &&
+          !node.parentElement.closest('svg,[aria-hidden="true"]')
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT,
+      }),
+      nodes = []
+    while (walker.nextNode()) nodes.push(walker.currentNode)
+    nodes.forEach((node) => {
+      const font = getComputedStyle(node.parentElement)
+      let offset = 0
+      for (const character of node.textContent) {
+        const range = document.createRange()
+        range.setStart(node, offset)
+        offset += character.length
+        range.setEnd(node, offset)
+        const r = range.getBoundingClientRect()
+        if (!character.trim()) continue
+        const span = document.createElement('span')
+        span.className = 'response-glyph'
+        span.style.cssText = `left:${r.left - box.left}px;top:${r.top - box.top}px;width:${r.width}px;height:${r.height}px;line-height:${r.height}px`
+        for (const property of [
+          'fontFamily',
+          'fontSize',
+          'fontWeight',
+          'fontStyle',
+          'fontStretch',
+          'fontVariant',
+          'textTransform',
+          'letterSpacing',
+          'color',
+        ])
+          span.style[property] = font[property]
+        const face = `${font.fontStyle} ${font.fontWeight} ${font.fontSize} ${font.fontFamily}`,
+          key =
+            face +
+            '|' +
+            font.letterSpacing +
+            '|' +
+            font.textTransform +
+            '|' +
+            r.width +
+            '|' +
+            alphabet(character)
+        let pool = pools.get(key)
+        if (!pool) {
+          if (measure) {
+            measure.font = face
+            pool = [...alphabet(character)]
+              .filter(
+                (c) =>
+                  measure.measureText(
+                    font.textTransform === 'uppercase'
+                      ? c.toUpperCase()
+                      : font.textTransform === 'lowercase'
+                        ? c.toLowerCase()
+                        : c,
+                  ).width +
+                    (parseFloat(font.letterSpacing) || 0) <=
+                  r.width + 0.25,
+              )
+              .join('')
+          }
+          pool ||= character
+          pools.set(key, pool)
+        }
+        layer.append(span)
+        chars.push({ span, character, pool })
+      }
+      const wrapper = document.createElement('span')
+      wrapper.className = 'stream-source'
+      node.before(wrapper)
+      wrapper.append(node)
+      sources.push({ wrapper, node })
+    })
+    if (!chars.length) return
+    document.body.append(layer)
+    const duration = Math.min(900, Math.max(160, chars.length * 16))
+    running.set(element, {
+      layer,
+      sources,
+      chars,
+      original,
+      duration,
+      start: performance.now(),
+      safety: setTimeout(() => settle(element), 920),
+    })
+    element.dataset.asciiState = 'streaming'
+    stats.text.push({ text: original.trim(), duration })
+    if (!frame) frame = requestAnimationFrame(tick)
+  }
+  const candidates = [
+    ...new Set(
+      [
+        ...document.querySelectorAll(
+          'h1,h2,h3,.stamp,.hero-origin,.exploration-intro>.meta,.origin,.meta>span,.section-title>.meta,.newsletter-copy>.mono',
+        ),
+      ].map((e) => (e.matches('h1,h2,h3') ? e.querySelector('a') || e : e)),
+    ),
+  ]
+    .filter(
+      (e) =>
+        !e.closest('.ascii-panel') &&
+        !e.querySelector('.stamp') &&
+        !e.closest(
+          'button,input,select,textarea,[aria-live],[role="status"],[role="alert"]',
+        ),
+    )
+    .filter(
+      (e, _, all) => !all.some((parent) => parent !== e && parent.contains(e)),
+    )
+  function stopText() {
+    textEpoch++
+    clearTimeout(fontTimer)
+    textObserver?.disconnect()
+    running.forEach((_, element) => settle(element))
+    cancelAnimationFrame(frame)
+    frame = 0
+    candidates.forEach((e) => e.classList.remove('stream-preparing'))
+  }
+  function watchText() {
+    stopText()
+    if (!enabled()) return
+    const epoch = textEpoch
+    candidates
+      .filter((e) => !seen.has(e))
+      .forEach((e) => e.classList.add('stream-preparing'))
+    fontTimer = setTimeout(stopText, 1800)
+    Promise.resolve(document.fonts?.ready)
+      .then(() => {
+        if (epoch !== textEpoch) return
+        clearTimeout(fontTimer)
+        if (!enabled()) {
+          stopText()
+          return
+        }
+        textObserver = new IntersectionObserver(
+          (entries) =>
+            entries.forEach(({ target, isIntersecting }) => {
+              if (!isIntersecting) return
+              stream(target)
+              textObserver.unobserve(target)
+            }),
+          { threshold: 0.05 },
+        )
+        candidates
+          .filter((e) => !seen.has(e))
+          .forEach((e) => textObserver.observe(e))
+      })
+      .catch(stopText)
+  }
+  const images = [...document.querySelectorAll('main img')].filter(
+      (img) => !img.closest('.chapter,.chapter-emblem,.org-chart'),
+    ),
+    revealed = new WeakSet(),
+    active = new Map()
+  function finishImage(img, state = 'final') {
+    const job = active.get(img)
+    if (job) {
+      clearTimeout(job.timer)
+      active.delete(img)
+      stats.activeImages--
+      stats.images.push({
+        src: img.src,
+        state,
+        duration: Math.round(performance.now() - job.start),
+      })
+    }
+    img.classList.remove('stream-image-pending', 'stream-image-enter')
+    img.dataset.streamImage = state
+  }
+  async function revealImage(img) {
+    if (revealed.has(img)) return
+    revealed.add(img)
+    try {
+      await img.decode()
+    } catch {
+      finishImage(img, 'unavailable')
+      return
+    }
+    if (!enabled()) {
+      finishImage(img)
+      return
+    }
+    img.classList.remove('stream-image-pending')
+    img.classList.add('stream-image-enter')
+    img.dataset.streamImage = 'revealing'
+    stats.activeImages++
+    const job = {
+      start: performance.now(),
+      timer: setTimeout(() => finishImage(img), 820),
+    }
+    active.set(img, job)
+    img.addEventListener('animationend', () => finishImage(img), { once: true })
+  }
+  function watchImages() {
+    imageObserver?.disconnect()
+    images.forEach((img) => finishImage(img))
+    if (!enabled()) return
+    images
+      .filter((img) => !revealed.has(img))
+      .forEach((img) => {
+        img.classList.add('stream-image-pending')
+        img.dataset.streamImage = 'pending'
+      })
+    imageObserver = new IntersectionObserver(
+      (entries) =>
+        entries.forEach(({ target, isIntersecting }) => {
+          if (isIntersecting) {
+            revealImage(target)
+            imageObserver.unobserve(target)
+          }
+        }),
+      { threshold: 0.05 },
+    )
+    images
+      .filter((img) => !revealed.has(img))
+      .forEach((img) => imageObserver.observe(img))
+  }
+  preference.addEventListener('change', () => {
+    watchText()
+    watchImages()
+  })
+  watchText()
+  watchImages()
+  window.addEventListener('resize', stopText)
+  window.addEventListener('beforeprint', () => {
+    stopText()
+    images.forEach((img) => finishImage(img))
+  })
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopText()
+      active.forEach((_, img) => finishImage(img))
+    }
+  })
+  window.addEventListener('pagehide', () => {
+    stopText()
+    active.forEach((_, img) => finishImage(img))
+  })
+
+  document.addEventListener('keydown', stopText, { once: true })
+  const boot = window.__speMotionBoot
+  if (boot) {
+    clearTimeout(boot.timer)
+    document.documentElement.classList.remove('motion-boot')
+  }
 })()
