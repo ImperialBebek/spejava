@@ -250,7 +250,13 @@ export function LatestEvent() {
   const next = events
     .filter((post) => post.event?.start && !isPastEvent(post.event))
     .sort((a, b) => a.event!.start.localeCompare(b.event!.start))[0]
-  const latest = next || events[0]
+  const latest =
+    next ||
+    events
+      .filter((post) => isPastEvent(post.event!))
+      .sort((a, b) => b.event!.start.localeCompare(a.event!.start))[0] ||
+    events[0]
+  const undated = latest && !latest.event?.start
   const award = posts.find(
     (post) =>
       post.slug === 'spe-java-section-named-regional-outstanding-section-2025',
@@ -265,14 +271,14 @@ export function LatestEvent() {
         {latest && (
           <div className="latest-event">
             <p className="meta">
-              {next ? 'Next event' : 'Most recent event'} /{' '}
-              <Stamp>{next ? 'UPCOMING' : 'PAST'}</Stamp>
+              {next ? 'Next event' : undated ? 'Date TBC' : 'Most recent event'}{' '}
+              / <Stamp>{next ? 'UPCOMING' : undated ? 'TBC' : 'PAST'}</Stamp>
             </p>
             <h3>{latest.title}</h3>
             <p className="mono">{displayDate(latest.event?.start || '')}</p>
             <p>{latest.event?.venue || 'Venue TBC'}</p>
             <a className="rule-link" href={postPath(latest)}>
-              {next ? 'Explore the event' : 'Explore the past event'}
+              {next || undated ? 'Explore the event' : 'Explore the past event'}
               <Arrow />
             </a>
           </div>

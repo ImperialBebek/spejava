@@ -227,3 +227,26 @@ test('publishing a future event replaces the home empty state, but review drafts
   )
   assert.ok(!reviewed.includes('Synthetic future event'))
 })
+
+test('undated published events remain discoverable with an explicit TBC state', async () => {
+  const base = snapshot.posts.find((post) => post.event)!
+  const post = {
+    ...base,
+    slug: 'date-pending',
+    title: 'Synthetic undated event',
+    reviewRequired: false,
+    event: {
+      ...base.event!,
+      start: '',
+      end: '',
+      registrationStatus: 'tbc' as const,
+    },
+  }
+  const content = { ...snapshot, posts: [post] }
+  const events = render(await createApp({ path: '/events', content }))
+  assert.match(events, /Dates to be confirmed/)
+  assert.match(events, /Synthetic undated event/)
+  const home = render(await createApp({ content }))
+  assert.ok(home.includes('Date TBC'))
+  assert.ok(!home.includes('>PAST<'))
+})

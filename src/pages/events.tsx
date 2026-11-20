@@ -18,7 +18,9 @@ export function EventTray({ post }: { post: Post }) {
         <time dateTime={event.start || undefined}>
           {displayDate(event.start)}
         </time>
-        <span className="meta">{past ? 'ARCHIVE' : 'UPCOMING'}</span>
+        <span className="meta">
+          {!event.start ? 'TBC' : past ? 'ARCHIVE' : 'UPCOMING'}
+        </span>
       </div>
       <a
         href={postPath(post)}
@@ -39,11 +41,13 @@ export function EventTray({ post }: { post: Post }) {
       </a>
       <div className="event-copy">
         <Stamp>
-          {past
-            ? 'PAST'
-            : event.registrationStatus === 'open'
-              ? 'OPEN'
-              : 'UPCOMING'}
+          {!event.start
+            ? 'TBC'
+            : past
+              ? 'PAST'
+              : event.registrationStatus === 'open'
+                ? 'OPEN'
+                : 'UPCOMING'}
         </Stamp>{' '}
         <span className={`meta${event.format === 'AES' ? ' aes-type' : ''}`}>
           {event.format}
@@ -80,6 +84,7 @@ export default function EventsPage() {
   const upcoming = matches.filter(
     (post) => post.event && !!post.event.start && !isPastEvent(post.event),
   )
+  const undated = matches.filter((post) => !post.event?.start)
   const archive = matches.filter(
     (post) => post.event && isPastEvent(post.event),
   )
@@ -126,6 +131,19 @@ export default function EventsPage() {
           </div>
         )}
       </section>
+      {undated.length > 0 && (
+        <section
+          className="section"
+          aria-label="Events awaiting confirmed dates"
+        >
+          <div className="section-title">
+            <h2>Dates to be confirmed</h2>
+          </div>
+          {undated.map((post) => (
+            <EventTray key={post.slug} post={post} />
+          ))}
+        </section>
+      )}
       <section className="section" aria-label="Past events">
         <div className="section-title">
           <h2>Deeper in the archive</h2>
