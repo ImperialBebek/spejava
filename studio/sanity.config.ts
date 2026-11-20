@@ -11,7 +11,6 @@ export default defineConfig({
   title: 'SPE Java Section',
   projectId,
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
-  basePath: '/admin',
   plugins: [structureTool()],
   schema: { types: schemas },
 })
