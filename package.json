@@ -17,9 +17,11 @@
   "dependencies": {
     "@portabletext/react": "3.2.4",
     "@portabletext/types": "2.0.15",
+    "img-fx": "0.5.1",
     "react": "~19.2.0",
     "react-dom": "~19.2.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "three": "0.170.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261120.1",

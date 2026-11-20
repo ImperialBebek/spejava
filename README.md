@@ -55,7 +55,7 @@ Existing images remain owned static assets with provenance. Replacing a photo in
 
 The rotation-only ASCII earth supports Pause/Resume, stops offscreen/in background tabs, and freezes under reduced motion. Geography is derived from public-domain [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) data supplied in the design handoff. Glyph dividers and arrow feedback remain in place.
 
-Designer’s v3 text streams from 0–100% with a four-character alphanumeric tail, using final glyph rectangles without changing source layout. Images begin invisible and fade in over 720ms with a slight blur clearing; img-fx/WebGL/CDN imports are removed. Semantic source text remains accessible during the decorative overlay. Reduced motion, no JS, unsupported observers, slow bootstrap and font failure show final plain content. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
+Designer’s v3 text streams from 0–100% with a four-character alphanumeric tail, using final glyph rectangles without changing source layout. Designer’s v4 images begin invisible, then the Libraries.dev `pixels-mechanic` mosaic resolves into the photo during an 800ms fade. Exact-pinned img-fx/Three packages are loaded locally only when an eligible image enters the viewport; one effect runs at a time on the shared WebGL renderer, then pauses without replay. Semantic images and source text remain accessible beneath decorative overlays. Reduced motion, no JS, missing WebGL/observers, dependency failure, slow bootstrap and font failure show final plain content. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
 
 ## Cloudflare deployment
 

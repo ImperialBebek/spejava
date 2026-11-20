@@ -435,11 +435,48 @@
       (img) => !img.closest('.chapter,.chapter-emblem,.org-chart'),
     ),
     revealed = new WeakSet(),
-    active = new Map()
+    active = new Map(),
+    inView = new Set(),
+    roots = new Set()
+  let capable, modules
+  function imageEnabled() {
+    if (
+      !enabled() ||
+      !('ResizeObserver' in window) ||
+      !('MutationObserver' in window)
+    )
+      return false
+    if (capable === undefined) {
+      try {
+        const canvas = document.createElement('canvas')
+        const gl = canvas.getContext('webgl2')
+        capable = !!gl
+        gl?.getExtension('WEBGL_lose_context')?.loseContext()
+      } catch {
+        capable = false
+      }
+    }
+    return capable
+  }
+  function loadImages() {
+    return (modules ??= Promise.all([
+      import('react'),
+      import('react-dom/client'),
+      import('img-fx'),
+    ]).catch((error) => {
+      stopImages('unavailable')
+      throw error
+    }))
+  }
   function finishImage(img, state = 'final') {
     const job = active.get(img)
     if (job) {
+      job.done = true
       clearTimeout(job.timer)
+      clearTimeout(job.poll)
+      job.watch?.disconnect()
+      job.pause?.()
+      if (job.host) job.host.hidden = true
       active.delete(img)
       stats.activeImages--
       stats.images.push({
@@ -447,38 +484,142 @@
         state,
         duration: Math.round(performance.now() - job.start),
       })
-    }
-    img.classList.remove('stream-image-pending', 'stream-image-enter')
-    img.dataset.streamImage = state
-  }
-  async function revealImage(img) {
-    if (revealed.has(img)) return
-    revealed.add(img)
-    try {
-      await img.decode()
-    } catch {
-      finishImage(img, 'unavailable')
-      return
-    }
-    if (!enabled()) {
-      finishImage(img)
-      return
+      imageObserver?.unobserve(img)
+      inView.delete(img)
+      queueMicrotask(pumpImages)
     }
     img.classList.remove('stream-image-pending')
-    img.classList.add('stream-image-enter')
-    img.dataset.streamImage = 'revealing'
-    stats.activeImages++
-    const job = {
-      start: performance.now(),
-      timer: setTimeout(() => finishImage(img), 820),
-    }
+    img.dataset.streamImage = state
+  }
+  function stopImages(state = 'static') {
+    imageObserver?.disconnect()
+    inView.clear()
+    images.forEach((img) => {
+      revealed.add(img)
+      finishImage(img, state)
+    })
+  }
+  function pumpImages() {
+    if (!images.length || !imageEnabled() || document.hidden || active.size)
+      return
+    const next = [...inView].find((img) => !revealed.has(img))
+    if (next) void revealImage(next)
+  }
+  async function revealImage(img) {
+    if (revealed.has(img) || !imageEnabled()) return
+    revealed.add(img)
+    const job = { start: performance.now(), done: false }
     active.set(img, job)
-    img.addEventListener('animationend', () => finishImage(img), { once: true })
+    stats.activeImages++
+    job.timer = setTimeout(() => stopImages('timeout'), 10000)
+    try {
+      const [react, dom, fx] = await loadImages()
+      await img.decode()
+      if (job.done) return
+      if (!imageEnabled() || !inView.has(img) || document.hidden) {
+        finishImage(img, 'static')
+        return
+      }
+      const rect = img.getBoundingClientRect()
+      if (!rect.width || !rect.height) {
+        finishImage(img, 'static')
+        return
+      }
+      const React = react.default
+      const host = document.createElement('div')
+      const stage = document.createElement('div')
+      job.host = host
+      host.className = 'ascii-image-effect imgfx-reveal-host'
+      host.setAttribute('aria-hidden', 'true')
+      host.style.cssText = `left:${rect.left + scrollX}px;top:${rect.top + scrollY}px;width:${rect.width}px;height:${rect.height}px;border-radius:${getComputedStyle(img).borderRadius}`
+      stage.className = 'ascii-image-stage'
+      stage.style.setProperty('--fx-width', rect.width + 'px')
+      stage.style.setProperty('--fx-height', rect.height + 'px')
+      host.append(stage)
+      document.body.append(host)
+      img.dataset.streamImage = 'preparing'
+      const width = Math.min(192, rect.width)
+      const height = (width * rect.height) / rect.width
+      function Picture() {
+        const ref = React.useRef(null)
+        const [paused, pause] = React.useState(job.done)
+        job.pause = () => pause(true)
+        React.useEffect(() => {
+          job.trigger = () => ref.current?.triggerReveal({ hold: 'manual' })
+        }, [])
+        return React.createElement(
+          fx.ImageGeneration,
+          {
+            ref,
+            preset: 'pixels-mechanic',
+            images: [img.currentSrc || img.src],
+            paused,
+          },
+          React.createElement('div', { style: { width, height } }),
+        )
+      }
+      class Boundary extends React.Component {
+        constructor(props) {
+          super(props)
+          this.state = { failed: false }
+        }
+        static getDerivedStateFromError() {
+          return { failed: true }
+        }
+        componentDidCatch() {
+          queueMicrotask(() => stopImages('unavailable'))
+        }
+        render() {
+          return this.state.failed ? null : this.props.children
+        }
+      }
+      job.root = dom.createRoot(stage)
+      roots.add(job)
+      job.root.render(
+        React.createElement(Boundary, null, React.createElement(Picture)),
+      )
+      function ready() {
+        if (job.done) return
+        const shader = stage.querySelector('.image-gen-shader')
+        let painted = false
+        try {
+          painted =
+            shader?.width > 0 &&
+            shader
+              .getContext('2d')
+              .getImageData(0, 0, shader.width, shader.height)
+              .data.some((value, index) => index % 4 === 3 && value > 0)
+        } catch {}
+        if (!painted || !job.trigger) {
+          job.poll = setTimeout(ready, 50)
+          return
+        }
+        if (!imageEnabled() || !inView.has(img) || document.hidden) {
+          finishImage(img, 'static')
+          return
+        }
+        job.watch = new MutationObserver(() => {
+          if (job.triggered && shader.style.opacity === '0') finishImage(img)
+        })
+        job.watch.observe(shader, {
+          attributes: true,
+          attributeFilter: ['style'],
+        })
+        job.triggered = performance.now()
+        job.trigger()
+        host.classList.add('imgfx-fading')
+        img.dataset.streamImage = 'revealing'
+      }
+      ready()
+    } catch {
+      finishImage(img, 'unavailable')
+    }
   }
   function watchImages() {
     imageObserver?.disconnect()
+    inView.clear()
     images.forEach((img) => finishImage(img))
-    if (!enabled()) return
+    if (!images.length || !imageEnabled()) return
     images
       .filter((img) => !revealed.has(img))
       .forEach((img) => {
@@ -486,13 +627,16 @@
         img.dataset.streamImage = 'pending'
       })
     imageObserver = new IntersectionObserver(
-      (entries) =>
+      (entries) => {
         entries.forEach(({ target, isIntersecting }) => {
-          if (isIntersecting) {
-            revealImage(target)
-            imageObserver.unobserve(target)
+          if (isIntersecting) inView.add(target)
+          else {
+            inView.delete(target)
+            if (active.has(target)) finishImage(target, 'offscreen')
           }
-        }),
+        })
+        pumpImages()
+      },
       { threshold: 0.05 },
     )
     images
@@ -505,20 +649,24 @@
   })
   watchText()
   watchImages()
-  window.addEventListener('resize', stopText)
+  window.addEventListener('resize', () => {
+    stopText()
+    active.forEach((_, img) => finishImage(img, 'resized'))
+  })
   window.addEventListener('beforeprint', () => {
     stopText()
-    images.forEach((img) => finishImage(img))
+    stopImages()
   })
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopText()
       active.forEach((_, img) => finishImage(img))
-    }
+    } else pumpImages()
   })
   window.addEventListener('pagehide', () => {
     stopText()
-    active.forEach((_, img) => finishImage(img))
+    stopImages()
+    roots.forEach((job) => job.root?.unmount())
   })
 
   document.addEventListener('keydown', stopText, { once: true })

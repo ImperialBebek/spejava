@@ -2445,32 +2445,47 @@ body span.response-glyph {
 .stream-image-pending {
   opacity: 0 !important;
 }
-.stream-image-enter {
-  animation: spe-image-appear 720ms var(--motion-ease) both;
+.ascii-image-effect {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
 }
-@keyframes spe-image-appear {
+.ascii-image-stage {
+  transform-origin: top left;
+}
+.imgfx-reveal-host {
+  opacity: 0;
+}
+.imgfx-reveal-host.imgfx-fading {
+  animation: imgfx-fade-in 800ms var(--motion-ease) both;
+}
+@keyframes imgfx-fade-in {
   from {
     opacity: 0;
-    filter: blur(3px);
-    transform: scale(0.99);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
   }
+}
+.ascii-image-stage .image-gen-root {
+  overflow: visible !important;
+}
+.ascii-image-stage .image-gen-root > canvas {
+  width: var(--fx-width) !important;
+  height: var(--fx-height) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .response-layer {
+  .response-layer,
+  .imgfx-reveal-host {
     display: none !important;
   }
   body span.stream-source {
     color: inherit !important;
   }
   .stream-preparing,
-  .stream-image-pending,
-  .stream-image-enter {
+  .stream-image-pending {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
@@ -2478,15 +2493,15 @@ body span.response-glyph {
   }
 }
 @media print {
-  .response-layer {
+  .response-layer,
+  .imgfx-reveal-host {
     display: none !important;
   }
   body span.stream-source {
     color: inherit !important;
   }
   .stream-preparing,
-  .stream-image-pending,
-  .stream-image-enter {
+  .stream-image-pending {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
