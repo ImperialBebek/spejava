@@ -449,8 +449,18 @@
     if (capable === undefined) {
       try {
         const canvas = document.createElement('canvas')
-        const gl = canvas.getContext('webgl2')
-        capable = !!gl
+        const gl = canvas.getContext('webgl2', {
+          failIfMajorPerformanceCaveat: true,
+        })
+        const info = gl?.getExtension('WEBGL_debug_renderer_info')
+        const renderer = info
+          ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL)
+          : ''
+        capable =
+          !!gl &&
+          !/swiftshader|llvmpipe|softpipe|software rasterizer|software renderer|basic render driver/i.test(
+            renderer,
+          )
         gl?.getExtension('WEBGL_lose_context')?.loseContext()
       } catch {
         capable = false
