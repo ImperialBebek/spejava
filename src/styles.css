@@ -1787,6 +1787,9 @@ dd a,
   margin: 0;
   max-width: 26ch;
 }
+.earth-controls {
+  min-height: 44px;
+}
 .earth-surface .motion-pause {
   color: white;
   border: 1px solid white;

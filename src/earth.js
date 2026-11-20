@@ -39,7 +39,7 @@ function renderEarthHTML(rotation,data){
  function measure(){
   const sample=document.createElement('span'),font=getComputedStyle(pre);sample.style.cssText='position:absolute;white-space:pre;letter-spacing:0;pointer-events:none';sample.style.fontFamily=font.fontFamily;sample.style.fontSize=font.fontSize;sample.style.fontWeight=font.fontWeight;sample.textContent='M'.repeat(100);stage.append(sample);
   const range=document.createRange();range.selectNodeContents(sample);const width=range.getBoundingClientRect().width/100;sample.remove();
-  if(width){stage.style.setProperty('--earth-cell',width+'px');stage.style.height=86*width+'px';pre.style.lineHeight=2*width+'px';stage.dataset.cellWidth=width}
+  if(width){stage.style.setProperty('--earth-cell',width+'px');pre.style.lineHeight=2*width+'px';stage.dataset.cellWidth=width}
  }
  function controls(){surface.dataset.state=id?'running':'paused';if(pause){pause.hidden=reduced.matches;pause.textContent=paused?'Resume motion':'Pause motion';pause.setAttribute('aria-pressed',String(paused))}}
  function frame(now){

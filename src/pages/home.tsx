@@ -386,15 +386,17 @@ export default function HomePage() {
               </span>{' '}
               Indonesia highlighted
             </p>
-            <button
-              type="button"
-              className="motion-pause"
-              aria-pressed="false"
-              hidden={true}
-              disabled={true}
-            >
-              Pause motion
-            </button>
+            <div className="earth-controls">
+              <button
+                type="button"
+                className="motion-pause"
+                aria-pressed="false"
+                hidden={true}
+                disabled={true}
+              >
+                Pause motion
+              </button>
+            </div>
           </figcaption>
         </figure>
       </section>
