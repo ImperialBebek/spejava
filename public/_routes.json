@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": ["/assets/*", "/media/*", "/images/*", "/fonts/*", "/admin/static/*", "/admin/open.js", "/admin/config.json", "/_shell", "/_shell.html", "/robots.txt", "/spe-join-member.mp4"]
+}

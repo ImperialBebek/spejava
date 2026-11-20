@@ -1,0 +1,24 @@
+{
+  "slug": "aes",
+  "kind": "event",
+  "title": "Annual Energy Symposium",
+  "excerpt": "The Society of Petroleum Engineers (SPE) Annual Energy Symposium (AES) is an event that features a case study competition and technical discussions.",
+  "body": "The Society of Petroleum Engineers (SPE) Annual Energy Symposium (AES) is an event that features a case study competition and technical discussions.\n\n\n\nCase study competition\n\nSPE Java Section hosts an AES case study competition that focuses on a theme related to energy demand and carbon footprint. The competition includes a presentation and question-and-answer session for each team.\n\n\n\nTechnical discussions\n\nSPE Java Section also hosts technical discussions that feature presentations from industry professionals. These discussions are free to attend and open to all SPE members and non-members.",
+  "image": "/media/8xTvZaYPfIM9EwmXgPCatKkuoWs.webp",
+  "alt": "Original event poster: Annual Energy Symposium",
+  "date": "2024-11-24",
+  "author": "",
+  "category": "Section news",
+  "language": "en",
+  "sourceUrl": "https://spejava.com/articles/aes",
+  "featured": false,
+  "reviewRequired": false,
+  "event": {
+    "start": "2024-11-24",
+    "venue": "Indonesia",
+    "format": "AES",
+    "registrationStatus": "closed"
+  },
+  "imageWidth": 1800,
+  "imageHeight": 1198
+}

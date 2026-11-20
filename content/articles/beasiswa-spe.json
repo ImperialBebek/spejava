@@ -1,0 +1,19 @@
+{
+  "slug": "beasiswa-spe",
+  "kind": "article",
+  "title": "Beasiswa SPE Event",
+  "excerpt": "Now that you've successfully updated your workspace to Height 2.0, let's get you going with some best practices on how to get the most out of Height 2.0.",
+  "body": "Pasar Santa\n\nNow that you've successfully updated your workspace to Height 2.0, let's get you going with some best practices on how to get the most out of Height 2.0.\n\n\n\n\nKey features new to Height 2.0\n\nAfter updating, you’ll have access to all of the new features, including autonomous ones and essential project management ones, including:\n\n[Teams](https://help.height.app/en/articles/9845121-how-do-i-create-a-team-in-height): dedicated spaces to keep team workflows and objects neatly organized across Height.Views: the new name for Smart lists.Documents: multiplayer documents to brainstorm ideas or record processes.Autonomous workflows: built-in workflows that let Height autonomously manage routine project management chores.\n\nFor a full list of what’s new in 2.0, check out our [release notes](https://height.app/blog/releasenotes_v2).\n\nSetting up Teams\n\nTeams are new to Height 2.0 and act as centralized spaces for each department’s projects, views, task forms, etc.\n\nTo set up Teams, here’s what to do:\n\nCreate a new team from sidebar to get started. Teams is a new section in the sidebar that is listed below your favorites. Scroll to the bottom of your favorites and select +New team under Teams to create a new team.\n​When creating teams, create them based on your company’s department breakdown, e.g. Product, Engineering, Marketing, and so on.\n​\n*NOTE: You can add team members directly from the creation modal and choose to make the team [private or non-private](https://help.height.app/en/articles/9820599-team-user-permissions#h_5ea83cac27) here, too. Move your existing Height tasks into the team. Projects, tasks, lists, and views can all be housed within specific teams now. To lessen the hassle of having to manually search and enter the names of lists and views that you want to move into the team, Height auto-populates ones that are relevant to the team name. You can click into the input field to remove ones you don’t want moved, or add ones you do want moved. \n​\n*NOTE: Height may not auto-populate every single relevant view or list.\n​\nYou’re not required to immediately move everything into the team right after updating. You can choose to move some now, and then move the rest at a later time. Views and Lists that are moved into a team — now and/or later — are automatically pinned to the team page (and under the team name in the sidebar) for quick and easy access. You can unpin them at any time.",
+  "image": "/media/vXrRpissnH20ky4VDN80meQOPo.webp",
+  "alt": "Image accompanying: Beasiswa SPE Event",
+  "date": "2025-01-07",
+  "author": "",
+  "category": "Students",
+  "language": "id",
+  "sourceUrl": "https://spejava.com/articles/beasiswa-spe",
+  "featured": false,
+  "reviewRequired": true,
+  "imageWidth": 1024,
+  "imageHeight": 768,
+  "archived": true
+}

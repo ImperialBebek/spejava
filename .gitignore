@@ -1,5 +1,13 @@
 node_modules/
 dist/
+src/generated-content.ts
+src/generated-earth.ts
+studio/migration.ndjson
+studio/.sanity/
+public/admin/config.json
+public/fonts/geist.woff2
+public/fonts/geist-mono.woff2
+public/fonts/OFL.txt
 .env*
 .wrangler/
 .vercel/

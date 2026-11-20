@@ -2,24 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      ;(() => {
+        if (
+          matchMedia('(prefers-reduced-motion: reduce)').matches ||
+          navigator.webdriver ||
+          /HeadlessChrome/i.test(navigator.userAgent) ||
+          !('IntersectionObserver' in window)
+        )
+          return
+        const boot = (window.__speMotionBoot = { expired: false })
+        document.documentElement.classList.add('motion-boot')
+        boot.timer = setTimeout(() => {
+          boot.expired = true
+          document.documentElement.classList.remove('motion-boot')
+        }, 1800)
+      })()
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0046ad" />
-    <title>SPE Java Section | Society of Petroleum Engineers</title>
-    <meta name="description" content="Official site of SPE Java Section. Find events, articles, and resources for energy professionals, students, and organizations in Indonesia." />
-    <link rel="canonical" href="https://spejava.com/" />
+    <meta name="theme-color" content="#F4F1EA" />
+    <!--head-meta-->
     <link rel="icon" type="image/png" href="/images/favicon.png" />
-    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="SPE Java Section | Society of Petroleum Engineers" />
-    <meta property="og:description" content="Connecting energy professionals in Indonesia since 1979. Discover SPE Java events, articles, and membership." />
-    <meta property="og:url" content="https://spejava.com/" />
-    <meta property="og:image" content="https://framerusercontent.com/assets/DV7CFEhRhSevtylr0Dv2H5M8.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://framerusercontent.com/assets/DV7CFEhRhSevtylr0Dv2H5M8.png" />
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SPE Java Section","url":"https://spejava.com/","foundingDate":"1979","parentOrganization":{"@type":"Organization","name":"Society of Petroleum Engineers","url":"https://www.spe.org/"}}</script>
+    <link
+      rel="preload"
+      href="/fonts/geist.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/geist-mono.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
   </head>
   <body>
     <div id="root"><!--app-html--></div>
+    <!--content-data-->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

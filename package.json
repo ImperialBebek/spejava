@@ -1,29 +1,46 @@
 {
-  "name": "spejava-homepage",
+  "name": "spejava",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "prepare:site": "tsx scripts/assets.ts && tsx scripts/content.ts",
+    "predev": "npm run prepare:site",
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build && tsx scripts/prerender.tsx",
+    "build": "npm run prepare:site && tsc --noEmit && vite build && tsx scripts/prerender.tsx && tsx scripts/studio.ts",
     "preview": "vite preview --host 0.0.0.0",
-    "check": "tsc --noEmit",
-    "test": "tsx --test src/content.test.tsx"
+    "check": "npm run prepare:site && tsc --noEmit",
+    "test": "npm run prepare:site && tsx --test src/*.test.tsx src/server/*.test.ts",
+    "cms:export": "npm run prepare:site && tsx scripts/export-sanity.ts",
+    "types:worker": "wrangler types src/worker-env.d.ts --include-runtime=false --strict-vars=false"
   },
   "dependencies": {
+    "@portabletext/react": "3.2.4",
+    "@portabletext/types": "2.0.15",
+    "img-fx": "0.5.1",
     "react": "~19.2.0",
-    "react-dom": "~19.2.0"
+    "react-dom": "~19.2.0",
+    "react-markdown": "^10.1.0",
+    "three": "0.170.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261120.1",
+    "@fontsource-variable/geist": "^5.2.6",
+    "@fontsource-variable/geist-mono": "^5.2.6",
     "@tailwindcss/vite": "~4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "jsonc-parser": "3.3.1",
+    "mdast-util-from-markdown": "2.0.2",
     "tailwindcss": "~4.1.0",
     "tsx": "^4.20.0",
     "typescript": "~5.9.0",
-    "vite": "~7.3.0"
+    "vite": "~7.3.0",
+    "wrangler": "4.165.0"
   },
-  "engines": { "node": ">=20.19.0" }
+  "engines": {
+    "node": ">=22.12.0"
+  }
 }
