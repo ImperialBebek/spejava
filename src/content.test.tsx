@@ -252,8 +252,41 @@ test('undated published events remain discoverable with an explicit TBC state', 
 })
 
 test('the legacy Height sample scholarship page stays quarantined', async () => {
- assert.equal(snapshot.posts.find(post => post.slug === 'beasiswa-spe')?.reviewRequired, true)
- assert.equal(resolveRoute('/articles/beasiswa-spe').noindex, true)
- assert.ok(!sitemap(snapshot).includes('/articles/beasiswa-spe'))
- assert.ok(!render(await createApp({ path: '/blog' })).includes('Beasiswa SPE Event'))
+  assert.equal(
+    snapshot.posts.find((post) => post.slug === 'beasiswa-spe')?.reviewRequired,
+    true,
+  )
+  assert.equal(resolveRoute('/articles/beasiswa-spe').noindex, true)
+  assert.ok(!sitemap(snapshot).includes('/articles/beasiswa-spe'))
+  assert.ok(
+    !render(await createApp({ path: '/blog' })).includes('Beasiswa SPE Event'),
+  )
+})
+
+test('programme social/search descriptions reflect confirmed open editions', () => {
+  const opens = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10)
+  const closes = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
+  for (const program of snapshot.programs) {
+    const edition: ProgramEdition = {
+      year: new Date().getFullYear(),
+      title: 'Synthetic confirmed edition',
+      opens,
+      closes,
+      registrationUrl: 'https://example.org/apply',
+      status: 'open',
+      body: '',
+      sponsors: [],
+    }
+    const route = resolveRoute('/' + program.slug, {
+      ...snapshot,
+      programs: [{ ...program, editions: [edition] }],
+    })
+    assert.match(route.description, /Applications are open until/)
+    const tags = metadata(route)
+    assert.ok(tags.includes('Synthetic confirmed edition'))
+    assert.ok(!tags.includes('No current application round'))
+    assert.ok(
+      !tags.includes('Future editions and registration await confirmation'),
+    )
+  }
 })
