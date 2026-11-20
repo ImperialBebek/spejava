@@ -250,3 +250,10 @@ test('undated published events remain discoverable with an explicit TBC state', 
   assert.ok(home.includes('Date TBC'))
   assert.ok(!home.includes('>PAST<'))
 })
+
+test('the legacy Height sample scholarship page stays quarantined', async () => {
+ assert.equal(snapshot.posts.find(post => post.slug === 'beasiswa-spe')?.reviewRequired, true)
+ assert.equal(resolveRoute('/articles/beasiswa-spe').noindex, true)
+ assert.ok(!sitemap(snapshot).includes('/articles/beasiswa-spe'))
+ assert.ok(!render(await createApp({ path: '/blog' })).includes('Beasiswa SPE Event'))
+})

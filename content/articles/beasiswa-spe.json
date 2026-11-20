@@ -12,7 +12,7 @@
   "language": "id",
   "sourceUrl": "https://spejava.com/articles/beasiswa-spe",
   "featured": false,
-  "reviewRequired": false,
+  "reviewRequired": true,
   "imageWidth": 1024,
   "imageHeight": 768,
   "archived": true
