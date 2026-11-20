@@ -17,7 +17,7 @@ function earthRows(grid){
   row.forEach(cell=>{if(cell.kind!==kind){flush();run='';kind=cell.kind}run+=cell.glyph});flush();return result;
  }).join('\n');
 }
-function renderEarthHTML(rotation,data){
+export function renderEarthHTML(rotation,data){
  const w=84,h=43,radius=40.5,tilt=-.19,grid=Array.from({length:h},()=>Array.from({length:w},()=>({glyph:' ',kind:null})));
  for(let row=0;row<h;row++)for(let col=0;col<w;col++){
   const x=(col-41.5)/radius,y=(21-row)*2/radius,rr=x*x+y*y;if(rr>1)continue;
@@ -31,7 +31,7 @@ function renderEarthHTML(rotation,data){
 }
 
 
-(async()=>{
+if(typeof document!=='undefined')(async()=>{
  const surface=document.querySelector('.earth-surface');if(!surface)return;const stage=surface.querySelector('.earth-stage'),pre=surface.querySelector('.ascii-art'),pause=surface.querySelector('[data-earth-control]');
  let data;try{const response=await fetch('/media/earth.json');if(!response.ok)return;data=await response.json()}catch{return}if(pause)pause.disabled=false;const reduced=(window.__speReducedMotion??=matchMedia('(prefers-reduced-motion: reduce)'));
  let id=0,last=0,rotation=115,visible=true,paused=false,frames=0;

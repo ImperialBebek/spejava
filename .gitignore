@@ -1,6 +1,7 @@
 node_modules/
 dist/
 src/generated-content.ts
+src/generated-earth.ts
 studio/migration.ndjson
 studio/.sanity/
 public/admin/config.json

@@ -1,4 +1,11 @@
-import { copyFile, writeFile } from 'node:fs/promises'
+import { copyFile, readFile, writeFile } from 'node:fs/promises'
+import { renderEarthHTML } from '../src/earth.js'
+
+const earth = JSON.parse(await readFile('public/media/earth.json', 'utf8'))
+await writeFile(
+  'src/generated-earth.ts',
+  `export const staticEarth = ${JSON.stringify(renderEarthHTML(115, earth))}\n`,
+)
 
 await Promise.all([
   copyFile(

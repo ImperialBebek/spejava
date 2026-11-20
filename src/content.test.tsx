@@ -55,6 +55,16 @@ test('all routes render one h1, a skip link, local images with alt, and valid lo
   }
 })
 
+test('Home includes a complete static globe before JavaScript runs', async () => {
+  const html = render(await createApp({ path: '/' }))
+  const globe = html.match(/<pre\b[^>]*class="ascii-art"[^>]*>([\s\S]*?)<\/pre>/)?.[1]
+  assert.ok(globe)
+  const rows = globe.replace(/<[^>]*>/g, '').split('\n')
+  assert.equal(rows.length, 43)
+  assert.ok(rows.every((row) => row.length === 84))
+  assert.match(globe, /class="earth-indonesia"/)
+})
+
 test('event dates include the final day in Jakarta, independent of registration status', () => {
   const event = {
     start: '2030-06-26',
