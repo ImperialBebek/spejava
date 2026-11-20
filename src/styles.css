@@ -1759,7 +1759,7 @@ dd a,
   pointer-events: none;
 }
 .earth-land {
-  color: var(--ink);
+  color: var(--shale);
 }
 .earth-ocean {
   color: var(--rule);
@@ -2430,6 +2430,21 @@ body span.response-glyph {
 .stream-image-pending {
   opacity: 0 !important;
 }
+.stream-image-enter {
+  animation: spe-image-appear 600ms var(--motion-ease) both;
+}
+@keyframes spe-image-appear {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
 .ascii-image-effect {
   position: absolute;
   z-index: 3;
@@ -2443,7 +2458,18 @@ body span.response-glyph {
   opacity: 0;
 }
 .imgfx-reveal-host.imgfx-fading {
-  animation: imgfx-fade-in 800ms var(--motion-ease) both;
+  animation: imgfx-fade-in 400ms var(--motion-ease) both;
+}
+.imgfx-final-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 2;
+}
+.imgfx-fading .imgfx-final-image {
+  animation: imgfx-fade-in 350ms var(--motion-ease) 400ms both;
 }
 @keyframes imgfx-fade-in {
   from {
@@ -2470,7 +2496,8 @@ body span.response-glyph {
     color: inherit !important;
   }
   .stream-preparing,
-  .stream-image-pending {
+  .stream-image-pending,
+  .stream-image-enter {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
@@ -2491,7 +2518,8 @@ body span.response-glyph {
     color: inherit !important;
   }
   .stream-preparing,
-  .stream-image-pending {
+  .stream-image-pending,
+  .stream-image-enter {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;

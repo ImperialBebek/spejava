@@ -438,7 +438,7 @@
     active = new Map(),
     inView = new Set(),
     roots = new Set()
-  let capable, modules
+  let capable, modules, prewarmObserver
   function imageEnabled() {
     if (
       !enabled() ||
@@ -472,9 +472,10 @@
     const job = active.get(img)
     if (job) {
       job.done = true
+      revealed.add(img)
       clearTimeout(job.timer)
       clearTimeout(job.poll)
-      job.watch?.disconnect()
+      clearTimeout(job.warmTimer)
       job.pause?.()
       if (job.host) job.host.hidden = true
       active.delete(img)
@@ -482,17 +483,25 @@
       stats.images.push({
         src: img.src,
         state,
-        duration: Math.round(performance.now() - job.start),
+        native: !!job.native,
+        revealStart: job.triggered,
+        completed: performance.now(),
+        preparation: Math.round(
+          (job.triggered || performance.now()) - job.start,
+        ),
+        duration: job.triggered
+          ? Math.round(performance.now() - job.triggered)
+          : 0,
       })
       imageObserver?.unobserve(img)
       inView.delete(img)
-      queueMicrotask(pumpImages)
     }
-    img.classList.remove('stream-image-pending')
+    img.classList.remove('stream-image-pending', 'stream-image-enter')
     img.dataset.streamImage = state
   }
   function stopImages(state = 'static') {
     imageObserver?.disconnect()
+    prewarmObserver?.disconnect()
     inView.clear()
     images.forEach((img) => {
       revealed.add(img)
@@ -500,23 +509,72 @@
     })
   }
   function pumpImages() {
-    if (!images.length || !imageEnabled() || document.hidden || active.size)
-      return
-    const next = [...inView].find((img) => !revealed.has(img))
-    if (next) void revealImage(next)
+    if (!images.length || !imageEnabled() || document.hidden) return
+    const batch = [...inView]
+      .filter((img) => !revealed.has(img))
+      .sort((a, b) => {
+        const x = a.getBoundingClientRect(),
+          y = b.getBoundingClientRect()
+        return Math.abs(x.top - y.top) > 8 ? x.top - y.top : x.left - y.left
+      })
+    const jobs = batch.map((img) => {
+      prepareImage(img)
+      revealed.add(img)
+      const job = active.get(img)
+      if (!job) return null
+      job.native = !!job.readyToReveal
+      if (!job.native) {
+        job.skipped = true
+        clearTimeout(job.poll)
+        clearTimeout(job.warmTimer)
+        job.pause?.()
+        if (job.host) job.host.hidden = true
+      }
+      return job
+    })
+    if (!jobs.length) return
+    requestAnimationFrame(() =>
+      jobs.forEach((job) => {
+        if (!job || job.done) return
+        const { img, host, photo } = job
+        if (!imageEnabled() || !inView.has(img) || document.hidden) {
+          finishImage(img, 'static')
+          return
+        }
+        job.triggered = performance.now()
+        img.dataset.streamImage = 'revealing'
+        if (job.native) {
+          const rect = img.getBoundingClientRect()
+          host.style.left = rect.left + scrollX + 'px'
+          host.style.top = rect.top + scrollY + 'px'
+          host.classList.add('imgfx-fading')
+          photo.addEventListener('animationend', () => finishImage(img), {
+            once: true,
+          })
+        } else {
+          img.classList.remove('stream-image-pending')
+          img.classList.add('stream-image-enter')
+        }
+        clearTimeout(job.timer)
+        job.timer = setTimeout(() => finishImage(img), job.native ? 750 : 600)
+      }),
+    )
+  }
+  function prepareImage(img) {
+    if (active.has(img)) return
+    void revealImage(img)
   }
   async function revealImage(img) {
     if (revealed.has(img) || !imageEnabled()) return
-    revealed.add(img)
-    const job = { start: performance.now(), done: false }
+    const job = { img, start: performance.now(), done: false }
     active.set(img, job)
     stats.activeImages++
-    job.timer = setTimeout(() => stopImages('timeout'), 12000)
+    job.timer = setTimeout(() => finishImage(img, 'timeout'), 12000)
     try {
       const [react, dom, fx] = await loadImages()
       await img.decode()
-      if (job.done) return
-      if (!imageEnabled() || !inView.has(img) || document.hidden) {
+      if (job.done || job.skipped) return
+      if (!imageEnabled() || document.hidden) {
         finishImage(img, 'static')
         return
       }
@@ -532,19 +590,36 @@
       job.host = host
       host.className = 'ascii-image-effect imgfx-reveal-host'
       host.setAttribute('aria-hidden', 'true')
-      host.style.cssText = `left:${rect.left + scrollX}px;top:${rect.top + scrollY}px;width:${rect.width}px;height:${rect.height}px;border-radius:${getComputedStyle(img).borderRadius}`
+      host.style.cssText = `left:${rect.left + scrollX}px;top:${scrollY + 100}px;width:${rect.width}px;height:${rect.height}px;border-radius:${getComputedStyle(img).borderRadius}`
       stage.className = 'ascii-image-stage'
       stage.style.setProperty('--fx-width', rect.width + 'px')
       stage.style.setProperty('--fx-height', rect.height + 'px')
       host.append(stage)
       document.body.append(host)
+      const photo = img.cloneNode()
+      photo.removeAttribute('id')
+      photo.removeAttribute('data-doop-id')
+      photo.removeAttribute('data-stream-image')
+      photo.className = 'imgfx-final-image'
+      photo.alt = ''
+      photo.loading = 'eager'
+      photo.style.cssText = `object-fit:${getComputedStyle(img).objectFit};object-position:${getComputedStyle(img).objectPosition}`
+      host.append(photo)
+      job.photo = photo
       img.dataset.streamImage = 'preparing'
-      const width = Math.min(192, rect.width)
+      const width = Math.min(96, rect.width)
       const height = (width * rect.height) / rect.width
       function Picture() {
         const ref = React.useRef(null)
-        const [paused, pause] = React.useState(job.done)
+        const [paused, pause] = React.useState(job.done || job.skipped)
         job.pause = () => pause(true)
+        React.useEffect(() => {
+          if (paused && job.warmed && !job.done && !job.skipped) {
+            job.readyToReveal = true
+            host.dataset.prepared = 'true'
+            clearTimeout(job.timer)
+          }
+        }, [paused])
         React.useEffect(() => {
           job.trigger = () => ref.current?.triggerReveal({ hold: 'manual' })
         }, [])
@@ -554,6 +629,7 @@
             ref,
             preset: 'pixels-mechanic',
             images: [img.currentSrc || img.src],
+            revealInitialDelay: 0,
             paused,
           },
           React.createElement('div', { style: { width, height } }),
@@ -568,7 +644,7 @@
           return { failed: true }
         }
         componentDidCatch() {
-          queueMicrotask(() => stopImages('unavailable'))
+          queueMicrotask(() => finishImage(img, 'unavailable'))
         }
         render() {
           return this.state.failed ? null : this.props.children
@@ -580,7 +656,7 @@
         React.createElement(Boundary, null, React.createElement(Picture)),
       )
       function ready() {
-        if (job.done) return
+        if (job.done || job.skipped) return
         const shader = stage.querySelector('.image-gen-shader')
         let painted = false
         try {
@@ -595,23 +671,16 @@
           job.poll = setTimeout(ready, 50)
           return
         }
-        if (!imageEnabled() || !inView.has(img) || document.hidden) {
+        if (!imageEnabled() || document.hidden) {
           finishImage(img, 'static')
           return
         }
-        job.watch = new MutationObserver(() => {
-          if (job.triggered && shader.style.opacity === '0') finishImage(img)
-        })
-        job.watch.observe(shader, {
-          attributes: true,
-          attributeFilter: ['style'],
-        })
-        clearTimeout(job.timer)
-        job.timer = setTimeout(() => stopImages('timeout'), 8000)
-        job.triggered = performance.now()
         job.trigger()
-        host.classList.add('imgfx-fading')
-        img.dataset.streamImage = 'revealing'
+        job.warmTimer = setTimeout(() => {
+          if (job.done || job.skipped) return
+          job.warmed = true
+          job.pause?.()
+        }, 120)
       }
       ready()
     } catch {
@@ -620,6 +689,7 @@
   }
   function watchImages() {
     imageObserver?.disconnect()
+    prewarmObserver?.disconnect()
     inView.clear()
     images.forEach((img) => finishImage(img))
     if (!images.length || !imageEnabled()) return
@@ -635,16 +705,29 @@
           if (isIntersecting) inView.add(target)
           else {
             inView.delete(target)
-            if (active.has(target)) finishImage(target, 'offscreen')
+            if (active.get(target)?.triggered) finishImage(target, 'offscreen')
           }
         })
         pumpImages()
       },
       { threshold: 0.05 },
     )
+    prewarmObserver = new IntersectionObserver(
+      (entries) =>
+        entries.forEach(({ target, isIntersecting }) => {
+          if (isIntersecting && !revealed.has(target)) {
+            prepareImage(target)
+            prewarmObserver.unobserve(target)
+          }
+        }),
+      { rootMargin: '900px 0px', threshold: 0 },
+    )
     images
       .filter((img) => !revealed.has(img))
-      .forEach((img) => imageObserver.observe(img))
+      .forEach((img) => {
+        prewarmObserver.observe(img)
+        imageObserver.observe(img)
+      })
   }
   preference.addEventListener('change', () => {
     watchText()
