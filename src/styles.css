@@ -1737,12 +1737,8 @@ dd a,
     display: block;
   }
 }
-@media (max-width: 760px) {
-  .variant-a .earth-surface figcaption {
-    margin-top: 14px;
-  }
-}
 .earth-surface {
+  position: relative;
   min-width: 0;
 }
 .earth-stage {
@@ -1763,14 +1759,13 @@ dd a,
   pointer-events: none;
 }
 .earth-land {
-  color: white;
+  color: var(--ink);
 }
 .earth-ocean {
-  color: rgba(255, 255, 255, 0.22);
+  color: var(--rule);
 }
-.earth-indonesia,
-.indonesia-key {
-  color: #c9a66b;
+.earth-indonesia {
+  color: var(--blue);
 }
 .earth-limb {
   position: absolute;
@@ -1778,32 +1773,15 @@ dd a,
   top: 50%;
   width: calc(82 * var(--earth-cell));
   height: calc(82 * var(--earth-cell));
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--rule);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
-.earth-surface figcaption {
-  font: 11px/1.5 var(--mono);
-  border-top: 1px solid rgba(255, 255, 255, 0.5);
-  padding-top: 12px;
-  margin-top: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-.earth-surface figcaption p {
-  margin: 0;
-  max-width: 26ch;
-}
-.earth-controls {
-  min-height: 44px;
-}
 .earth-surface .motion-pause {
-  color: white;
-  border: 1px solid white;
-  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  background: var(--bone);
   min-height: 44px;
   padding: 8px 10px;
   font: 11px var(--mono);
@@ -1811,7 +1789,7 @@ dd a,
   flex-shrink: 0;
 }
 .earth-surface :focus-visible {
-  outline-color: white;
+  outline-color: var(--blue);
 }
 .home-earth .home-hero {
   min-height: 804px;
@@ -1828,9 +1806,9 @@ dd a,
 }
 .home-earth .home-hero .earth-surface {
   grid-column: 7/-1;
-  background: var(--blue);
-  color: white;
-  padding: 16px 8px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0;
   margin: 0;
 }
 .home-earth .earth-stage {
@@ -1897,9 +1875,6 @@ dd a,
   }
   .home-earth .hero-origin {
     padding-top: 16px;
-  }
-  .home-earth .home-hero .earth-surface {
-    padding: 12px 8px;
   }
   .home-earth .earth-stage {
     --earth-cell: 3.0584375px;
@@ -2030,8 +2005,8 @@ dd a,
   padding: 8px 12px;
 }
 .earth-surface .motion-pause:disabled {
-  color: white;
-  border-color: rgba(255, 255, 255, 0.65);
+  color: var(--shale);
+  border-color: var(--rule);
 }
 .sr-only {
   position: absolute;
@@ -2043,6 +2018,18 @@ dd a,
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+.earth-surface .motion-pause:focus-visible {
+  top: 12px;
+  right: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 10px;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 1px solid var(--ink);
 }
 @media (max-width: 1100px) {
   .brand img {

@@ -56,7 +56,7 @@ export default function HomePage() {
         <figure
           className="ascii-panel earth-surface"
           role="group"
-          aria-label="Rotating Earth with Indonesia highlighted in sandstone"
+          aria-label="Rotating Earth with Indonesia highlighted in blue"
         >
           <div className="earth-stage">
             <pre className="ascii-art" data-doop-id="rmrk1w" aria-hidden="true">
@@ -379,25 +379,15 @@ export default function HomePage() {
             </pre>
             <span className="earth-limb" aria-hidden="true"></span>
           </div>
-          <figcaption>
-            <p>
-              <span className="indonesia-key" aria-hidden="true">
-                +
-              </span>{' '}
-              Indonesia highlighted
-            </p>
-            <div className="earth-controls">
-              <button
-                type="button"
-                className="motion-pause"
-                aria-pressed="false"
-                hidden={true}
-                disabled={true}
-              >
-                Pause motion
-              </button>
-            </div>
-          </figcaption>
+          <button
+            type="button"
+            className="motion-pause sr-only"
+            aria-pressed="false"
+            hidden={true}
+            disabled={true}
+          >
+            Pause motion
+          </button>
         </figure>
       </section>
       <LatestEvent />
