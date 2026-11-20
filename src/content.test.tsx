@@ -1,60 +1,229 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
-import { renderToStaticMarkup } from 'react-dom/server'
-import App from './App'
-import { articles, events, legacyUrl, navigation, sponsors } from './content'
-import { instagramPosts, readInstagramPosts } from './instagram'
+import { existsSync, readFileSync } from 'node:fs'
+import { renderToStaticMarkup as render } from 'react-dom/server'
+import createApp from './App'
+import { snapshot } from './data'
+import { jsonForHtml, metadata, renderDocument, sitemap } from './document'
+import { isEditionOpen, isPastEvent, type ProgramEdition } from './model'
+import { publicRoutes, resolveRoute } from './routes'
+import { Markdown } from './richtext'
+import { validateContent, validatePost, validateProgram } from './validation'
+import { portableBody } from '../scripts/export-sanity'
 
-test('all non-homepage links preserve existing SPE Java destinations', () => {
-  for (const item of navigation) {
-    assert.equal(new URL(legacyUrl(item.path)).origin, 'https://spejava.com')
+test('all 34 legacy addresses resolve within the 47-route site', () => {
+  const legacy = JSON.parse(readFileSync('content/legacy-routes.json', 'utf8'))
+  const paths: string[] = Array.isArray(legacy)
+    ? legacy.map((value) => (typeof value === 'string' ? value : value.path))
+    : legacy.routes
+  assert.equal(paths.length, 34)
+  for (const path of paths)
+    assert.notEqual(resolveRoute(path).kind, 'not-found', path)
+  assert.equal(publicRoutes(snapshot).length, 47)
+  assert.equal(resolveRoute('/events/?filter=archive#all').kind, 'events')
+  assert.equal(resolveRoute('/not-a-page').kind, 'not-found')
+})
+
+test('all routes render one h1, a skip link, local images with alt, and valid local links', async () => {
+  for (const route of publicRoutes(snapshot)) {
+    const html = render(await createApp({ path: route.path }))
+    assert.equal((html.match(/<h1\b/g) || []).length, 1, route.path)
+    assert.ok(
+      html.includes('id="main"') && html.includes('href="#main"'),
+      route.path,
+    )
+    for (const match of html.matchAll(/href="(\/(?!\/)[^"]*)"/g)) {
+      const path = new URL(
+        match[1].replace(/&amp;/g, '&'),
+        'https://spejava.com',
+      ).pathname
+      assert.ok(
+        path === '/admin/' ||
+          resolveRoute(path).kind !== 'not-found' ||
+          existsSync(`public${path}`),
+        `${route.path} links to ${path}`,
+      )
+    }
+    for (const match of html.matchAll(/<img\b[^>]*>/g))
+      assert.match(match[0], /\balt="[^"]*"/, `${route.path}: missing alt`)
+    for (const match of html.matchAll(/src="(\/(?!\/)[^"]*)"/g))
+      assert.ok(existsSync(`public${match[1]}`), `${route.path}: ${match[1]}`)
+    assert.ok(
+      !/javascript:|data-elfsight-app|framerusercontent\.com/.test(html),
+      route.path,
+    )
   }
-  const eventsMenu = navigation.find((item) => item.label === 'Events')
-  assert.equal(eventsMenu?.children?.find((item) => item.label === 'Annual Energy Symposium')?.url, 'https://spejava.com/articles/aes')
-  for (const article of articles) assert.match(article.slug, /^[a-z0-9-]+$/)
 })
 
-test('all content images exist locally and have meaningful descriptions', () => {
-  for (const item of [...articles, ...events]) {
-    assert.ok(existsSync(`public/images/${item.image}`), item.image)
-    assert.ok(item.alt.length > 15)
+test('event dates include the final day in Jakarta, independent of registration status', () => {
+  const event = {
+    start: '2030-06-26',
+    venue: '',
+    format: 'AES' as const,
+    registrationStatus: 'closed' as const,
   }
-  for (const sponsor of sponsors) assert.ok(existsSync(`public/images/${sponsor.image}`))
-  for (const post of instagramPosts) {
-    assert.ok(existsSync(`public${post.mediaUrl}`))
-    assert.ok(post.caption.length > 15)
+  assert.equal(isPastEvent(event, new Date('2030-06-25T00:00:00Z')), false)
+  assert.equal(isPastEvent(event, new Date('2030-06-26T16:59:59Z')), false)
+  assert.equal(isPastEvent(event, new Date('2030-06-26T17:00:00Z')), true)
+  assert.equal(isPastEvent({ ...event, start: '' }), false)
+  assert.equal(
+    isPastEvent({ ...event, end: '2030-06-28' }, new Date('2030-06-27')),
+    false,
+  )
+})
+
+test('programme applications need confirmed dates, URL, and an explicit open status', () => {
+  const edition: ProgramEdition = {
+    year: 2030,
+    title: 'Scholarship 2030',
+    opens: '2030-01-01',
+    closes: '2030-01-31',
+    status: 'open',
+    registrationUrl: 'https://forms.gle/example',
+    body: '',
+    sponsors: [],
   }
+  assert.equal(isEditionOpen(edition, new Date('2030-01-15')), true)
+  assert.equal(isEditionOpen(edition, new Date('2030-01-31T16:59:59Z')), true)
+  assert.equal(isEditionOpen(edition, new Date('2030-01-31T17:00:00Z')), false)
+  assert.equal(
+    isEditionOpen({ ...edition, status: 'tbc' }, new Date('2030-01-15')),
+    false,
+  )
+  assert.throws(
+    () =>
+      validateProgram({
+        ...snapshot.programs[0],
+        editions: [{ ...edition, closes: '' }],
+      }),
+    /confirmed dates/,
+  )
 })
 
-test('homepage renders crawlable headings and links without JavaScript', () => {
-  const html = renderToStaticMarkup(<App />)
-  assert.equal((html.match(/<h1\b/g) || []).length, 1)
-  for (const heading of ['Latest Articles', 'Upcoming event', 'Join, Renew, Belong', 'Latest posts']) assert.ok(html.includes(heading))
-  assert.ok(html.includes('https://www.spe.org/en/join/'))
-  assert.ok(html.includes('https://spejava.com/contact'))
-  assert.ok(html.includes('href="#main"'))
-  assert.ok(html.includes('<details'))
-  assert.ok(html.includes('loading="lazy"'), 'offscreen media should be lazy loaded')
-  assert.ok(!html.includes('autoplay'), 'video should not autoplay')
-  for (const post of instagramPosts) assert.ok(html.includes(post.permalink), 'Instagram posts must be available without JavaScript')
+test('malformed CMS data and script URLs fail validation', () => {
+  for (const image of ['javascript:alert(1)', '//evil.example/image.jpg'])
+    assert.throws(() => validatePost({ ...snapshot.posts[0], image }), /URL/)
+  assert.throws(
+    () => validatePost({ ...snapshot.posts[0], date: '2025-02-31' }),
+    /date/,
+  )
+  assert.throws(
+    () =>
+      validatePost({ ...snapshot.posts[0], image: '/media/a.webp', alt: '' }),
+    /alternative text/,
+  )
+  assert.throws(
+    () =>
+      validatePost({
+        ...snapshot.posts[0],
+        bodyBlocks: [{ _type: 'script', value: '<script>' }],
+      }),
+    /block/,
+  )
+  assert.throws(
+    () =>
+      validateContent(
+        { ...snapshot, posts: [snapshot.posts[0], snapshot.posts[0]] },
+        'sanity',
+      ),
+    /Duplicate/,
+  )
+  const html = render(
+    <Markdown>
+      {'<script>alert(1)</script>\n\n[Bad](javascript:alert(1))'}
+    </Markdown>,
+  )
+  assert.ok(!html.includes('<script>') && !html.includes('href="javascript:'))
+  assert.ok(
+    !jsonForHtml({ text: '</script><script>alert(1)</script>&' }).includes('<'),
+  )
 })
 
-test('LinkedIn uses native iframe lazy loading without a nested visibility gate', () => {
-  const html = renderToStaticMarkup(<App />)
-  const iframe = html.match(/<iframe\b[^>]*>/)?.[0]
-  assert.ok(iframe)
-  assert.match(iframe, /loading="lazy"/)
-  assert.ok(iframe.includes('https://static.elfsight.com/platform/platform.js'))
-  assert.ok(iframe.includes('elfsight-app-3ce07fd6-0202-441b-8bc4-ed1382b6d543'))
-  assert.ok(!iframe.includes('data-elfsight-app-lazy'), 'the inner visibility gate can stall when scrolled past the iframe origin')
+test('historical form links are visibly closed rather than active', () => {
+  const html = render(
+    <Markdown archive>{'[Register](https://forms.gle/old)'}</Markdown>,
+  )
+  assert.ok(!html.includes('href='))
+  assert.ok(html.includes('historical registration; closed'))
 })
 
-test('Instagram feed accepts valid posts and rejects malformed or unsafe destinations', () => {
-  const post = { ...instagramPosts[0], mediaUrl: 'https://images.feedspring.com/post.webp' }
-  assert.deepEqual(readInstagramPosts({ data: { media: [post] } }), [post])
-  assert.equal(readInstagramPosts({ data: { media: Array(5).fill(post) } }).length, 3)
-  assert.deepEqual(readInstagramPosts(null), [])
-  assert.deepEqual(readInstagramPosts({ error: 'Unavailable' }), [])
-  assert.deepEqual(readInstagramPosts({ data: { media: [null, {}, { ...post, permalink: 'javascript:alert(1)' }, { ...post, mediaUrl: 'data:image/svg+xml,invalid' }] } }), [])
+test('metadata is route-specific, safe, and excludes editorial quarantine from search', () => {
+  const template =
+    '<html lang="en"><head><!--head-meta--></head><body><!--app-html--><!--content-data--></body></html>'
+  for (const route of publicRoutes(snapshot)) {
+    const html = renderDocument(
+      template,
+      route,
+      '<main>Content</main>',
+      snapshot,
+    )
+    assert.ok(html.includes(`https://spejava.com${route.path}`))
+    assert.ok(html.includes(`lang="${route.language}"`))
+    assert.ok(
+      html.includes('application/ld+json') && html.includes('id="spe-content"'),
+    )
+    assert.ok(!html.includes('<!--'))
+  }
+  assert.ok(metadata(resolveRoute('/404')).includes('noindex,nofollow'))
+  for (const post of snapshot.posts.filter((post) => post.reviewRequired))
+    assert.ok(
+      metadata(resolveRoute(`/articles/${post.slug}`)).includes(
+        'noindex,nofollow',
+      ),
+    )
+  assert.ok(!sitemap(snapshot).includes('consectetur'))
+})
+
+test('Markdown migration preserves headings, marks, links and lists in Portable Text', () => {
+  const blocks = portableBody(
+    '## Heading\n\nA **bold** word and a [source](https://spe.org).\n\n- One\n- Two',
+  )
+  assert.equal(blocks[0].style, 'h2')
+  assert.ok(blocks.some((block) => block.listItem === 'bullet'))
+  const html = render(<Markdown blocks={blocks}>{''}</Markdown>)
+  assert.ok(
+    html.includes('<strong>bold</strong>') &&
+      html.includes('href="https://spe.org"') &&
+      html.includes('<ul>'),
+  )
+})
+
+test('the unconfigured contact form cannot transmit personal information', async () => {
+  const html = render(await createApp({ path: '/contact' }))
+  assert.match(html, /<button[^>]*disabled/)
+  assert.ok(!html.includes('<form action='))
+  assert.ok(html.includes('TBC'))
+})
+
+test('publishing a future event replaces the home empty state, but review drafts do not', async () => {
+  const base = snapshot.posts.find((post) => post.event)!
+  const year = new Date().getFullYear() + 2
+  const event = {
+    ...base,
+    slug: 'synthetic-future-event',
+    title: 'Synthetic future event',
+    reviewRequired: false,
+    event: {
+      ...base.event!,
+      start: `${year}-06-26`,
+      end: '',
+      registrationStatus: 'closed' as const,
+    },
+  }
+  const html = render(
+    await createApp({
+      content: { ...snapshot, posts: [...snapshot.posts, event] },
+    }),
+  )
+  assert.ok(html.includes('Synthetic future event'))
+  assert.ok(!html.includes('No upcoming event is confirmed here yet.'))
+  const reviewed = render(
+    await createApp({
+      content: {
+        ...snapshot,
+        posts: [...snapshot.posts, { ...event, reviewRequired: true }],
+      },
+    }),
+  )
+  assert.ok(!reviewed.includes('Synthetic future event'))
 })

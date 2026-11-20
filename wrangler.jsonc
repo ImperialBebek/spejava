@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spejava",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-11-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SANITY_PROJECT_ID": "",
+    "SANITY_DATASET": "production"
+  },
+  "env": {
+    "preview": {
+      "vars": {
+        "SANITY_PROJECT_ID": "",
+        "SANITY_DATASET": "production"
+      }
+    }
+  }
+}
