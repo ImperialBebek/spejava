@@ -511,7 +511,7 @@
     const job = { start: performance.now(), done: false }
     active.set(img, job)
     stats.activeImages++
-    job.timer = setTimeout(() => stopImages('timeout'), 10000)
+    job.timer = setTimeout(() => stopImages('timeout'), 12000)
     try {
       const [react, dom, fx] = await loadImages()
       await img.decode()
@@ -526,6 +526,7 @@
         return
       }
       const React = react.default
+      fx.setMaxDpr(1)
       const host = document.createElement('div')
       const stage = document.createElement('div')
       job.host = host
@@ -605,6 +606,8 @@
           attributes: true,
           attributeFilter: ['style'],
         })
+        clearTimeout(job.timer)
+        job.timer = setTimeout(() => stopImages('timeout'), 8000)
         job.triggered = performance.now()
         job.trigger()
         host.classList.add('imgfx-fading')
