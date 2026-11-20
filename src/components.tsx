@@ -105,7 +105,7 @@ export function Header({ section }: { section: string }) {
   ))
   return (
     <>
-      <a className="skip" href="#main">
+      <a className="skip" href="#main" onClick={() => setExpanded(false)}>
         Skip to content
       </a>
       <header className="site-header">

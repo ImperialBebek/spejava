@@ -32,6 +32,7 @@
 html {
   scrollbar-width: thin;
   scrollbar-color: var(--shale) var(--bone);
+  scroll-padding-top: 112px;
 }
 body {
   margin: 0;
@@ -139,6 +140,12 @@ svg {
   gap: var(--gap);
 }
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  max-height: 100dvh;
+  overflow-y: auto;
+  background: var(--bone);
   border-bottom: 1px solid var(--ink);
 }
 .header-inner {
@@ -233,12 +240,12 @@ svg {
   display: none;
 }
 .skip {
-  position: absolute;
+  position: fixed;
   left: 24px;
   top: -100px;
   padding: 12px;
   background: white;
-  z-index: 10;
+  z-index: 20;
 }
 .skip:focus {
   top: 12px;
@@ -1076,6 +1083,9 @@ dt,
   }
 }
 @media (max-width: 760px) {
+  html {
+    scroll-padding-top: 96px;
+  }
   .wrap {
     padding: 0 20px;
   }
@@ -2496,6 +2506,11 @@ body span.response-glyph {
   }
 }
 @media print {
+  .site-header {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
   .response-layer,
   .imgfx-reveal-host {
     display: none !important;
