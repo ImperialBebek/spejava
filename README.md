@@ -51,9 +51,9 @@ Existing images remain owned static assets with provenance. Replacing a photo in
 
 ## Motion and assets
 
-The supplied v2 motion layer keeps original readable HTML in place: ASCII streaming uses `.:+x#%` for at most 700ms without changing word geometry, with glyph dividers/arrows and a bounded loading indicator. The rotation-only ASCII earth supports Pause/Resume, stops offscreen/in background tabs, and freezes under reduced motion. Geography is derived from public-domain [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) data supplied in the design handoff.
+The rotation-only ASCII earth supports Pause/Resume, stops offscreen/in background tabs, and freezes under reduced motion. Geography is derived from public-domain [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) data supplied in the design handoff. Glyph dividers and arrow feedback remain in place.
 
-Image reveals load pinned `img-fx@0.5.1` from esm.sh on demand, using the native `pixels-mechanic` preset and its shared WebGL renderer. The underlying plain image is never hidden. Reduced motion, automation, missing WebGL, failed CDN imports, printing and interrupted reveals keep final static content. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
+Text and image effects are currently disabled pending the revised design handoff: images should fade in from invisible, and text should stream from 0–100% using ordinary random characters without changing container geometry. Original plain HTML and images remain visible in this interim build. No video autoplays. Fonts are self-hosted Geist and Geist Mono.
 
 ## Cloudflare deployment
 

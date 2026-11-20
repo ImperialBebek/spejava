@@ -34,6 +34,12 @@ export interface Route {
   noindex?: boolean
 }
 const base = { language: 'en' as const }
+function programDescription(program: Program) {
+  const edition = program.editions?.find((edition) => isEditionOpen(edition))
+  if (edition)
+    return `${edition.title}. Applications are open until ${displayDate(edition.closes)}.`
+  return `Explore ${program.title}, programme editions and registration information from SPE Java.`
+}
 export function publicRoutes(content: Content = snapshot): Route[] {
   return [
     {
@@ -125,16 +131,7 @@ export function publicRoutes(content: Content = snapshot): Route[] {
       ...base,
       path: `/${program.slug}`,
       title: program.title,
-      description: program.editions?.some((edition) => isEditionOpen(edition))
-        ? (() => {
-            const edition = program.editions!.find((edition) =>
-              isEditionOpen(edition),
-            )!
-            return `${edition.title}. Applications are open until ${displayDate(edition.closes)}.`
-          })()
-        : program.slug === 'aes'
-          ? 'Annual Energy Symposium 2025 archive. Future editions and registration await confirmation.'
-          : 'SPE Java scholarship information and historical announcements. No current application round is confirmed.',
+      description: programDescription(program),
       section: program.slug === 'aes' ? '/events' : '/student-chapter',
       kind: 'program' as const,
       program,
