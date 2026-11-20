@@ -333,3 +333,11 @@ test('Portable Text keeps unsafe legacy link labels without unsafe annotations',
   assert.ok(html.includes('Legacy') && html.includes('bad'))
   assert.ok(!html.includes('href="http:') && !html.includes('user:password'))
 })
+
+test('Portable Text preserves contact email links containing the letter s', () => {
+  const blocks = portableBody('[Contact](mailto:afadly@slb.com)')
+  assert.deepEqual(
+    blocks.flatMap((block) => block.markDefs || []).map((link) => link.href),
+    ['mailto:afadly@slb.com'],
+  )
+})

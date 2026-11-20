@@ -35,7 +35,7 @@ export function portableBody(markdown: string): PortableTextBlock[] {
       if (node.type === 'link') {
         if (
           !isSafeUrl(node.url) &&
-          !/^mailto:[^\\s@]+@[^\\s@]+$/.test(node.url)
+          !/^mailto:[^\s@]+@[^\s@]+$/.test(node.url)
         )
           return phrasing(node.children, marks, markDefs)
         const id = key()
